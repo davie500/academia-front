@@ -1,151 +1,240 @@
 <template>
-    <div class="login-container">
-        <div class="login-box">
-            <h1 class="login-title">Login</h1>
-            
-            <form @submit.prevent="handleLogin">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input 
-                        id="email" 
-                        v-model="email" 
-                        type="email" 
-                        placeholder="seu@email.com"
-                        required
-                    >
-                </div>
+  <div class="login-container">
+    <div class="overlay"></div>
 
-                <div class="form-group">
-                    <label for="password">Senha</label>
-                    <input 
-                        id="password" 
-                        v-model="password" 
-                        type="password" 
-                        placeholder="••••••••"
-                        required
-                    >
-                </div>
-
-                <button type="submit" class="login-button">Entrar</button>
-            </form>
-
-            <div class="login-footer">
-                <p>Não tem conta? <a href="#signup">Cadastre-se</a></p>
-            </div>
-        </div>
+    <!-- Logo -->
+    <div class="logo-area">
+      <h1 class="logo">FITFORCE</h1>
+      <div class="logo-line"></div>
     </div>
+
+    <!-- Card -->
+    <div class="login-box">
+      <h2 class="welcome">Bem-vindo</h2>
+      <p class="subtitle">Entre na sua conta</p>
+
+      <form @submit.prevent="handleLogin">
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            v-model="email"
+            type="email"
+            placeholder="seu@email.com"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            placeholder="••••••••"
+            required
+          >
+        </div>
+
+        <div class="options">
+          <label class="remember">
+            <input type="checkbox">
+            Lembrar-me
+          </label>
+
+          <a href="#" class="forgot">Esqueceu a senha?</a>
+        </div>
+
+        <button type="submit" class="login-button">
+          ENTRAR
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p>
+          Não tem uma conta?
+          <a href="#signup">CADASTRE-SE</a>
+        </p>
+      </div>
+    </div>
+
+    <footer class="footer-text">
+      Transforme Seu Corpo, <span>Alcance Seus Limites</span>
+    </footer>
+  </div>
 </template>
 
 <script>
 export default {
-    name: 'Login',
-    data() {
-        return {
-            email: '',
-            password: ''
-        };
-    },
-    methods: {
-        handleLogin() {
-            console.log('Login:', this.email, this.password);
-        }
+  name: 'Login',
+  data() {
+    return {
+      email: '',
+      password: ''
+    };
+  },
+  methods: {
+    handleLogin() {
+      console.log('Login:', this.email, this.password);
     }
+  }
 };
 </script>
 
 <style scoped>
+/* Fundo */
 .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: #000;
+  position: relative;
+  min-height: 100vh;
+  background-image: url('/gym-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/* Logo */
+.logo-area {
+  position: absolute;
+  top: 40px;
+  text-align: center;
+  z-index: 2;
+}
+
+.logo {
+  font-size: 36px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.logo-line {
+  width: 70px;
+  height: 4px;
+  margin: 8px auto 0;
+  background: linear-gradient(90deg, red, orange);
+}
+
+/* Card */
 .login-box {
-    width: 100%;
-    max-width: 400px;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(255, 107, 53, 0.2);
-    border: 1px solid #ff6b35;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 380px;
+  padding: 32px;
+  background: rgba(15, 15, 15, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(255, 80, 0, 0.25);
 }
 
-.login-title {
-    color: #fff;
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 28px;
-    font-weight: 300;
-    letter-spacing: 2px;
+/* Textos */
+.welcome {
+  font-size: 28px;
+  margin-bottom: 4px;
 }
 
+.subtitle {
+  color: #ff6a00;
+  margin-bottom: 24px;
+}
+
+/* Form */
 .form-group {
-    margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 label {
-    display: block;
-    color: #fff;
-    margin-bottom: 8px;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
 input {
-    width: 100%;
-    padding: 12px 15px;
-    background: #111;
-    border: 2px solid #333;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+  color: #fff;
+}
+
+input::placeholder {
+  color: #777;
 }
 
 input:focus {
-    outline: none;
-    border-color: #ff6b35;
-    box-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
+  outline: none;
+  border-color: #ff6a00;
 }
 
+/* Opções */
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.remember {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.forgot {
+  color: #ff6a00;
+  text-decoration: none;
+}
+
+/* Botão */
 .login-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    background: linear-gradient(135deg, #ff6b35, #ff8c42);
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(90deg, #ff0000, #ff6a00);
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: opacity 0.3s;
 }
 
 .login-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  opacity: 0.85;
 }
 
+/* Footer do card */
 .login-footer {
-    text-align: center;
-    margin-top: 20px;
-    color: #999;
-    font-size: 13px;
+  text-align: center;
+  font-size: 14px;
 }
 
 .login-footer a {
-    color: #ff6b35;
-    text-decoration: none;
-    transition: color 0.3s ease;
+  color: #ff6a00;
+  font-weight: bold;
+  text-decoration: none;
 }
 
-.login-footer a:hover {
-    color: #ff8c42;
+/* Rodapé */
+.footer-text {
+  position: absolute;
+  bottom: 20px;
+  font-size: 13px;
+  color: #aaa;
+  z-index: 2;
+}
+
+.footer-text span {
+  color: #ff6a00;
 }
 </style>
