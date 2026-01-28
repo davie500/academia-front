@@ -2,13 +2,13 @@
   <div class="login-container">
     <div class="overlay"></div>
 
+    
+    <!-- Card -->
     <!-- Logo -->
     <div class="logo-area">
       <h1 class="logo">FITFORCE</h1>
       <div class="logo-line"></div>
     </div>
-
-    <!-- Card -->
     <div class="login-box">
       <h2 class="welcome">Bem-vindo</h2>
       <p class="subtitle">Entre na sua conta</p>
@@ -126,7 +126,7 @@ export default {
 /* Card */
 .login-box {
   position: relative;
-  z-index: 2;
+
   width: 100%;
   max-width: 380px;
   padding: 32px;
@@ -135,9 +135,8 @@ export default {
   box-shadow: 0 0 30px rgba(255, 80, 0, 0.25);
 }
 
-/* Textos */
 .welcome {
-  font-size: 28px;
+  font-size: 26px;
   margin-bottom: 4px;
 }
 
@@ -146,7 +145,7 @@ export default {
   margin-bottom: 24px;
 }
 
-/* Form */
+
 .form-group {
   margin-bottom: 18px;
 }
