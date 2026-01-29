@@ -1,14 +1,5 @@
 <template>
   <div class="login-container">
-    <div class="overlay"></div>
-
-    
-    <!-- Card -->
-    <!-- Logo -->
-    <div class="logo-area">
-      <h1 class="logo">FITFORCE</h1>
-      <div class="logo-line"></div>
-    </div>
     <div class="login-box">
       <h2 class="welcome">Bem-vindo</h2>
       <p class="subtitle">Entre na sua conta</p>
@@ -37,13 +28,16 @@
         </div>
 
         <div class="options">
-          <label class="remember">
-            <input type="checkbox">
-            Lembrar-me
-          </label>
-
           <a href="#" class="forgot">Esqueceu a senha?</a>
         </div>
+        <br>
+        <div class="terms">
+          <label>
+            <input type="checkbox" required />
+            Li e aceito os <a href="#" target="_blank">Termos de Uso</a>
+          </label>
+        </div>
+        
 
         <button type="submit" class="login-button">
           ENTRAR
@@ -57,10 +51,6 @@
         </p>
       </div>
     </div>
-
-    <footer class="footer-text">
-      Transforme Seu Corpo, <span>Alcance Seus Limites</span>
-    </footer>
   </div>
 </template>
 
@@ -82,11 +72,10 @@ export default {
 </script>
 
 <style scoped>
-/* Fundo */
+
 .login-container {
   position: relative;
   min-height: 100vh;
-  background-image: url('/gym-bg.jpg');
   background-size: cover;
   background-position: center;
   display: flex;
@@ -96,18 +85,39 @@ export default {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.overlay {
+.login-container {
+  position: relative;
+
+}
+
+.login-container::before {
+  content: "FITFORCE";
+  position: absolute;
+  left: 80px;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  font-size: 200px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+
+.overlay{
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
 }
 
-/* Logo */
+
 .logo-area {
   position: absolute;
   top: 40px;
   text-align: center;
   z-index: 2;
+  color: #fff;
 }
 
 .logo {
@@ -123,10 +133,9 @@ export default {
   background: linear-gradient(90deg, red, orange);
 }
 
-/* Card */
+
 .login-box {
   position: relative;
-
   width: 100%;
   max-width: 380px;
   padding: 32px;
@@ -136,8 +145,10 @@ export default {
 }
 
 .welcome {
-  font-size: 26px;
+  font-size: 40px;
   margin-bottom: 4px;
+  display: flex;
+  justify-content: center;
 }
 
 .subtitle {
@@ -163,6 +174,7 @@ input {
   border: 1px solid #333;
   background: #0f0f0f;
   color: #fff;
+  margin:auto;
 }
 
 input::placeholder {
@@ -174,7 +186,7 @@ input:focus {
   border-color: #ff6a00;
 }
 
-/* Opções */
+
 .options {
   display: flex;
   justify-content: space-between;
@@ -194,7 +206,7 @@ input:focus {
   text-decoration: none;
 }
 
-/* Botão */
+
 .login-button {
   width: 100%;
   padding: 14px;
@@ -212,7 +224,6 @@ input:focus {
   opacity: 0.85;
 }
 
-/* Footer do card */
 .login-footer {
   text-align: center;
   font-size: 14px;
@@ -224,7 +235,7 @@ input:focus {
   text-decoration: none;
 }
 
-/* Rodapé */
+
 .footer-text {
   position: absolute;
   bottom: 20px;

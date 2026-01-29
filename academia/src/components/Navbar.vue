@@ -1,27 +1,6 @@
 <template>
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <h1 class="brand-title">FITFORCE</h1>
-    </div>
 
-    <div class="navbar-menu">
-      <div class="navbar-start">
-        <a class="navbar-item" href="/">Home</a>
-        <a class="navbar-item" href="/sobre">Sobre</a>
-        <a class="navbar-item" href="/planos">Planos</a>
-        <a class="navbar-item" href="/trainers">Treinadores</a>
-        <a class="navbar-item" href="/contato">Contato</a>
-      </div>
-
-      <div class="navbar-end">
-        <div class="buttons">
-          <a class="button is-primary" href="/login">
-            Login
-          </a>
-        </div>
-      </div>
-    </div>
-  </nav>
+  
 </template>
 
 <style>

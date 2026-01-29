@@ -5,6 +5,7 @@
 
 <script setup>
   import Navbar from './components/Navbar.vue'
+  import login from './views/Login.vue'
 </script>
 
 <style>
