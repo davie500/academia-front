@@ -31,14 +31,59 @@
           <a href="#" class="forgot">Esqueceu a senha?</a>
         </div>
         <br>
-        <div class="terms">
-          <label>
-            <input type="checkbox" required />
-            Li e aceito os <a href="#" target="_blank">Termos de Uso</a>
-          </label>
-        </div>
-        
+<div class="terms">
+  <input type="checkbox" id="terms" required />
+  <label for="terms">
+    Li e aceito os 
+    <span class="terms-link" onclick="openTerms()">Termos de Uso</span>
+  </label>
+</div>
 
+<!-- MODAL -->
+<div id="termsModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeTerms()">×</span>
+
+    <!-- COLE AQUI O TEXTO DO TERMO -->
+    <h2>Termos de Uso</h2>
+    <p>
+Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
+Caso não concorde com qualquer parte destes termos, recomendamos que não utilize nossos serviços.
+</p>
+<h3>1. Uso do site</h3>
+<p>
+O usuário compromete-se a utilizar o site de forma lícita, respeitando as leis vigentes,
+a moral e os bons costumes. É proibido o uso do site para fins ilegais, fraudulentos
+ou que possam causar prejuízo a terceiros.
+</p>
+
+<h3>2. Cadastro e segurança</h3>
+<p>
+O usuário é responsável por manter a confidencialidade de seus dados de acesso,
+incluindo login e senha. Qualquer atividade realizada com sua conta será de sua responsabilidade.
+</p>
+
+<h3>3. Privacidade</h3>
+<p>
+As informações fornecidas pelo usuário serão utilizadas apenas para fins de funcionamento
+do sistema, respeitando a privacidade e a proteção de dados conforme a legislação vigente.
+</p>
+
+<h3>4. Modificações</h3>
+<p>
+Reservamo-nos o direito de alterar estes Termos de Uso a qualquer momento,
+sem aviso prévio. Recomenda-se a verificação periódica deste conteúdo.
+</p>
+
+<h3>5. Aceitação</h3>
+<p>
+Ao marcar a opção “Li e aceito os Termos de Uso”, o usuário declara que leu,
+compreendeu e concorda com todas as condições aqui apresentadas.
+</p>
+<button type="button" class="btn-voltar" onclick="closeTerms()">Voltar</button>
+
+</div>
+</div>
         <button type="submit" class="login-button">
           ENTRAR
         </button>
@@ -72,7 +117,94 @@ export default {
 </script>
 
 <style scoped>
+.btn-voltar {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(90deg, #ff0000, #ff7a00);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+}
 
+.btn-voltar:hover {
+  opacity: 0.9;
+}
+/* Fundo escuro */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 999;
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: #111;
+  color: #fff;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  padding: 25px;
+  border-radius: 12px;
+  overflow-y: auto;
+  box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
+}
+
+/* Títulos */
+.modal-content h2 {
+  margin-bottom: 15px;
+  color: #ff7a00;
+}
+
+.modal-content h3 {
+  margin-top: 20px;
+  color: #ff7a00;
+}
+
+/* Texto */
+.modal-content p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+/* Botão fechar */
+.close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 22px;
+  cursor: pointer;
+  color: #ff7a00;
+}
+.terms {
+  display: flex;
+  gap: 8px;
+  margin: 15px 0;
+  font-size: 14px;
+}
+
+.terms input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  display: flex;
+  margin: 0px;
+}
+
+.terms a {
+  color: #ff7a00;
+  text-decoration: none;
+}
+
+.terms a:hover {
+  text-decoration: underline;
+}
 .login-container {
   position: relative;
   min-height: 100vh;
@@ -97,7 +229,7 @@ export default {
   top: 50%;
   transform: translateY(-50%);
   
-  font-size: 200px;
+  font-size: 245px;
   font-weight: 800;
   letter-spacing: 4px;
   z-index: 0;
@@ -162,9 +294,11 @@ export default {
 }
 
 label {
-  display: block;
+  display: flex;
   font-size: 14px;
   margin-bottom: 6px;
+  gap: 4px;
+  flex-direction: row;
 }
 
 input {
@@ -174,7 +308,6 @@ input {
   border: 1px solid #333;
   background: #0f0f0f;
   color: #fff;
-  margin:auto;
 }
 
 input::placeholder {
