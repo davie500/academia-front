@@ -3,7 +3,8 @@ import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
 import Planos from '../views/Planos.vue'
 import Treinadores from '@/views/Treinadores.vue'
-import Anotacoes from '@/views/Anotacoes.vue'
+import Anotacoes from '../views/Anotacoes.vue'
+import Cadastro from '../views/Cadastro.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -11,6 +12,7 @@ const routes = [
   { path: '/planos', name: 'Planos', component: Planos },
   { path: '/trainers' , name: 'Treinadores', component: Treinadores },
   { path: '/notes', name: 'Notas', component: Anotacoes },
+  { path: '/cadastro', name: 'Cadastro', component: Cadastro },
 ]
 
 const router = createRouter({
