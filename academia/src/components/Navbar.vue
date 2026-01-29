@@ -1,14 +1,12 @@
 <template>
   <nav class="navbar">
     <div class="navbar-brand">
-      <h1 class="brand-title">FITFORCE</h1>
+      <a href="/" class="brand-title">FITFORCE</a>
     </div>
 
     <div class="navbar-menu">
       <div class="navbar-start">
-        <a class="navbar-item" href="/">HOME</a>
-        <a class="navbar-item" href="/sobre">SOBRE</a>
-        <a class="navbar-item" href="/planos">PLANOS</a>
+        <a class="navbar-item" href="/notes">ANOTAÇÕES</a>
         <a class="navbar-item" href="/trainers">TREINADORES</a>
         <a class="navbar-item" href="/contato">CONTATO</a>
       </div>
@@ -47,6 +45,8 @@
 .brand-title {
   margin: 0;
   font-size: 1.5rem;
+  color: white;
+  text-decoration: none;
 }
 
 .navbar-menu {
