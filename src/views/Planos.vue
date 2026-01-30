@@ -1,37 +1,41 @@
 <template>
-  <div class="planos-page">
-    <!-- Header -->
+
+  <LoadingOverlay
+    :show="loading"
+    message="Carregando dados dos planos..."
+  />
+
+  <div v-if="!loading" class="planos-page">
     <div class="planos-header">
       <h1 class="planos-header__title">
-        <span class="planos-header__text-white">Escolha o Plano </span>
-        <span class="planos-header__text-highlight">Ideal</span>
-        <span class="planos-header__text-white"> Para Você</span>
+        <span class="planos-header__text-white">
+          Escolha o Plano
+        </span>
+
+        <span class="planos-header__text-highlight">
+          Ideal
+        </span>
+
+        <span class="planos-header__text-white">
+          Para Você
+        </span>
       </h1>
+
       <p class="planos-header__subtitle">
         Planos flexíveis para alcançar seus objetivos
       </p>
     </div>
 
-    <!-- Pricing Cards Grid -->
     <div class="planos-container">
       <div class="planos-grid">
         <PricingCard
           v-for="plan in planos"
           :key="plan.id"
           :plan="plan"
-          :isPremium="plan.id === 'premium'"
         />
       </div>
     </div>
 
-    <!-- Footer Info -->
-    <div class="planos-footer">
-      <div class="planos-footer__content">
-        <p class="planos-footer__text">
-          ✓ Todos os planos incluem: WiFi gratuito, estacionamento e sem fidelidade
-        </p>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -39,29 +43,91 @@
 import { onMounted, ref } from 'vue';
 import PricingCard from '../components/PricingCard.vue';
 import api from '../controller/api'
+import LoadingOverlay from '../components/LoadingOverlay.vue';  
 
-const planos = ref<Plano[]>([
+const planos = ref<PlanoAgrupado[]>([
 ]);
 
+const loading = ref(false);
+
+interface Vantagem {
+  id: number;
+  nome: string;
+  descricao: string;
+}
+
 interface Plano {
+  id: number;
   nome: string;
   preco: string;
   periodo: string;
-  benefits: string[];
+  vantagens: Vantagem[];
 }
 
-onMounted(async() => {
-   const response = await api.get('/api/planos')
-   planos.value = response.data
-   console.log(planos.value)
-});
+interface PlanoAgrupado {
+  nome: string;
+  mensal?: string;
+  anual?: string;
+  vantagens: Vantagem[];
+}
+
+
+onMounted(async () => {
+  loading.value = true
+
+  try {
+    const response = await api.get('/api/planos')
+
+    const mapa: Record<string, PlanoAgrupado> = {}
+
+    response.data.forEach((plano: Plano) => {
+      if (!mapa[plano.nome]) {
+        mapa[plano.nome] = {
+          nome: plano.nome,
+          mensal: undefined,
+          anual: undefined,
+          vantagens: []
+        }
+      }
+
+      if (plano.periodo === 'Mensal') {
+        mapa[plano.nome].mensal = plano.preco
+      }
+
+      if (plano.periodo === 'Anual') {
+        mapa[plano.nome].anual = plano.preco
+      }
+
+      plano.vantagens.forEach(vantagem => {
+        const existe = mapa[plano.nome].vantagens.some(
+          v => v.id === vantagem.id
+        )
+
+        if (!existe) {
+          mapa[plano.nome].vantagens.push(vantagem)
+        }
+      })
+    })
+
+    planos.value = Object.values(mapa)
+  } catch (error) {
+    console.error('Erro ao carregar planos', error)
+  } finally {
+    loading.value = false
+  }
+})
 
 </script>
 
 <style scoped>
 .planos-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #0f1419 0%, #000000 50%, #0f1419 100%);
+  background-image: url('https://img.freepik.com/fotos-gratis/estilo-de-vida-de-equipamentos-de-escritorio-recreacao-de-fitness_1203-5058.jpg?semt=ais_hybrid&w=740&q=80');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(0, 0, 0, 0.95);
+  background-blend-mode: overlay;
   padding: 48px 16px;
 }
 
@@ -101,9 +167,9 @@ onMounted(async() => {
 
 .planos-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 360px));
   gap: 32px;
-  align-items: center;
+  justify-content: center; 
 }
 
 .planos-footer {

@@ -1,56 +1,119 @@
 <template>
   <div :class="['pricing-card', { 'pricing-card--premium': isPremium }]">
-    <!-- Badge Popular -->
     <div v-if="isPremium" class="pricing-card__badge">
       MAIS POPULAR
     </div>
 
-    <!-- Card Content -->
     <div class="pricing-card__content">
-      <!-- Title and Price -->
-      <h3 class="pricing-card__title">{{ plan.title }}</h3>
+      <h3 class="pricing-card__title">{{ plan.nome }}</h3>
+
       <div class="pricing-card__price">
-        <span class="pricing-card__amount">{{ plan.price }}</span>
-        <span class="pricing-card__period">/{{ plan.period }}</span>
+        <div v-if="plan.mensal">
+          <span class="pricing-card__amount">
+            R$ {{ plan.mensal }}
+          </span>
+          <span class="pricing-card__period">/ mensal</span>
+        </div>
+
+        <div v-if="plan.anual" style="margin-top: 12px;">
+          <span class="pricing-card__amount">
+            R$ {{ plan.anual }}
+          </span>
+          <span class="pricing-card__period">/ anual</span>
+        </div>
       </div>
 
-      <!-- Benefits List -->
       <ul class="pricing-card__benefits">
-        <li v-for="(benefit, index) in plan.benefits" :key="index" class="pricing-card__benefit">
-          <svg class="pricing-card__checkmark" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        <li
+          v-for="vantagem in plan.vantagens"
+          :key="vantagem.id"
+          class="pricing-card__benefit"
+        >
+          <svg
+            class="pricing-card__checkmark"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clip-rule="evenodd"
+            />
           </svg>
-          <span class="pricing-card__benefit-text">{{ benefit }}</span>
+
+          <span class="pricing-card__benefit-text">
+            {{ vantagem.nome }}
+          </span>
+
+          
+        </li>
+
+        <li
+          v-if="plan.vantagens.length === 0"
+          class="pricing-card__benefit"
+        >
+          <span class="pricing-card__benefit-text">
+            Nenhuma vantagem inclusa
+          </span>
         </li>
       </ul>
     </div>
 
-    <!-- Button -->
-    <button :class="['pricing-card__button', { 'pricing-card__button--orange': isPremium }]">
-      {{ buttonText }}
+    <button
+      :class="['pricing-card__button', { 'pricing-card__button--orange': isPremium }]"
+      @click="assinarPlano"
+    >
+      assinar
     </button>
   </div>
 </template>
 
+
+
 <script setup lang="ts">
-interface Plan {
-  title: string;
-  price: string;
-  period: string;
-  benefits: string[];
+
+import { useRouter } from 'vue-router'
+
+interface Vantagem {
+  id: number;
+  nome: string;
+  descricao: string;
 }
 
-withDefaults(
+interface PlanoAgrupado {
+  nome: string;
+  mensal?: string;
+  anual?: string;
+  vantagens: Vantagem[];
+}
+
+const props = withDefaults(
   defineProps<{
-    plan: Plan;
+    plan: PlanoAgrupado;
     isPremium?: boolean;
     buttonText?: string;
   }>(),
   {
     buttonText: 'Assinar Agora'
   }
-);
+)
+
+const router = useRouter()
+
+function assinarPlano() {
+  const plano = props.plan.nome.toLowerCase() 
+
+  router.push({
+    path: '/pagamento',
+    query: {
+      plano
+    }
+  })
+}
+
 </script>
+
+
 
 <style scoped>
 .pricing-card {
@@ -97,6 +160,7 @@ withDefaults(
   color: white;
   margin: 0 0 16px 0;
   letter-spacing: -0.5px;
+  text-align: center;
 }
 
 .pricing-card__price {
