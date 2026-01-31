@@ -39,12 +39,12 @@
   </label>
 </div>
 
-<!-- MODAL -->
+
 <div id="termsModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeTerms()">×</span>
 
-    <!-- COLE AQUI O TEXTO DO TERMO -->
+  
     <h2>Termos de Uso</h2>
     <p>
 Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
@@ -133,7 +133,7 @@ export default {
 .btn-voltar:hover {
   opacity: 0.9;
 }
-/* Fundo escuro */
+
 .modal {
   display: none;
   position: fixed;
@@ -154,8 +154,6 @@ export default {
   overflow-y: auto;
   box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
 }
-
-/* Títulos */
 .modal-content h2 {
   margin-bottom: 15px;
   color: #ff7a00;
@@ -166,14 +164,12 @@ export default {
   color: #ff7a00;
 }
 
-/* Texto */
 .modal-content p {
   font-size: 14px;
   line-height: 1.6;
   margin-top: 8px;
 }
 
-/* Botão fechar */
 .close {
   position: absolute;
   top: 15px;
@@ -229,7 +225,7 @@ export default {
   top: 50%;
   transform: translateY(-50%);
   
-  font-size: 245px;
+  font-size: 200px;
   font-weight: 800;
   letter-spacing: 4px;
   z-index: 0;
@@ -367,8 +363,6 @@ input:focus {
   font-weight: bold;
   text-decoration: none;
 }
-
-
 .footer-text {
   position: absolute;
   bottom: 20px;
