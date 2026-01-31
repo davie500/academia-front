@@ -106,9 +106,6 @@ export default {
 </script>
 
 <style scoped>
-.fundo {
-  background-color: black;
-}
 .btn-voltar {
   margin-top: 20px;
   width: 100%;

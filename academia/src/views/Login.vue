@@ -120,9 +120,6 @@ export default {
 </script>
 
 <style scoped>
-body {
-    background-color: black;
-}
 .btn-voltar {
   margin-top: 20px;
   width: 100%;

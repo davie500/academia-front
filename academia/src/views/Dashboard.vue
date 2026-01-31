@@ -71,5 +71,4 @@
     transform: translate(-50%, -50%) scale(1.1);
     box-shadow: 0 8px 20px rgba(255, 127, 0, 0.4);
 }
-
 </style>
