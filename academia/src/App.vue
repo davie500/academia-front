@@ -1,17 +1,7 @@
 <template>
     <Navbar />
     <router-view />
+    <img :src="fundo" alt="Fundo Academia" class="fundo" />
 </template>
 
-<script setup>
-  import Navbar from './components/Navbar.vue'
-  import login from './views/Login.vue'
-</script>
-
-<style>
-body {
-  background-color: black;
-  margin: 0;
-  padding: 0;
-}
-</style>
+<style scoped></style>

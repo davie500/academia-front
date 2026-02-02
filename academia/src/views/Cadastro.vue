@@ -1,95 +1,75 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <h2 class="welcome">Bem-vindo</h2>
-      <p class="subtitle">Entre na sua conta</p>
-
-      <form @submit.prevent="handleLogin">
+      <h2 class="welcome">Cadastro</h2>
+      <p class="subtitle">Crie sua conta</p>
+      <form @submit.prevent="handleRegister">
+        <div class="form-group">
+          <label for="name">Nome</label>
+          <input id="name" v-model="name" type="text" placeholder="Seu nome completo" required />
+        </div>
         <div class="form-group">
           <label for="email">E-mail</label>
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            placeholder="seu@email.com"
-            required
-          >
+          <input id="email" v-model="email" type="email" placeholder="seu@email.com" required />
         </div>
-
         <div class="form-group">
           <label for="password">Senha</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            placeholder="••••••••"
-            required
-          >
+          <input id="password" v-model="password" type="password" placeholder="••••••••" required />
         </div>
-
-        <div class="options">
-          <a href="#" class="forgot">Esqueceu a senha?</a>
+        <div class="form-group">
+          <label for="confirmPassword">Confirmar Senha</label>
+          <input id="confirmPassword" v-model="confirmPassword" type="password" placeholder="Repita a senha" required />
         </div>
-        <br>
-<div class="terms">
-  <input type="checkbox" id="terms" required />
-  <label for="terms">
-    Li e aceito os 
-    <span class="terms-link" @click="openTerms">Termos de Uso</span>
-  </label>
-</div>
-
-<div id="termsModal" class="modal">
-  <div class="modal-content">
-    <span class="close" @click="closeTerms">x</span>
-    <h2>Termos de Uso</h2>
-    <p>
-Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
-Caso não concorde com qualquer parte destes termos, recomendamos que não utilize nossos serviços.
-</p>
-<h3>1. Uso do site</h3>
-<p>
-O usuário compromete-se a utilizar o site de forma lícita, respeitando as leis vigentes,
-a moral e os bons costumes. É proibido o uso do site para fins ilegais, fraudulentos
-ou que possam causar prejuízo a terceiros.
-</p>
-
-<h3>2. Cadastro e segurança</h3>
-<p>
-O usuário é responsável por manter a confidencialidade de seus dados de acesso,
-incluindo login e senha. Qualquer atividade realizada com sua conta será de sua responsabilidade.
-</p>
-
-<h3>3. Privacidade</h3>
-<p>
-As informações fornecidas pelo usuário serão utilizadas apenas para fins de funcionamento
-do sistema, respeitando a privacidade e a proteção de dados conforme a legislação vigente.
-</p>
-
-<h3>4. Modificações</h3>
-<p>
-Reservamo-nos o direito de alterar estes Termos de Uso a qualquer momento,
-sem aviso prévio. Recomenda-se a verificação periódica deste conteúdo.
-</p>
-
-<h3>5. Aceitação</h3>
-<p>
-Ao marcar a opção “Li e aceito os Termos de Uso”, o usuário declara que leu,
-compreendeu e concorda com todas as condições aqui apresentadas.
-</p>
-<button type="button" class="btn-voltar" @click="closeTerms">Voltar</button>
-
-</div>
-</div>
-        <button type="submit" class="login-button">
-          ENTRAR
-        </button>
+        <div class="terms">
+          <input type="checkbox" id="terms" required />
+          <label for="terms">
+            Li e aceito os
+            <span class="terms-link" @click="openTerms">Termos de Uso</span>
+          </label>
+        </div>
+        <div id="termsModal" class="modal">
+          <div class="modal-content">
+            <span class="close" @click="closeTerms">x</span>
+            <h2>Termos de Uso</h2>
+            <p>
+              Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
+              Caso não concorde com qualquer parte destes termos, recomendamos que não utilize nossos serviços.
+            </p>
+            <h3>1. Uso do site</h3>
+            <p>
+              O usuário compromete-se a utilizar o site de forma lícita, respeitando as leis vigentes,
+              a moral e os bons costumes. É proibido o uso do site para fins ilegais, fraudulentos
+              ou que possam causar prejuízo a terceiros.
+            </p>
+            <h3>2. Cadastro e segurança</h3>
+            <p>
+              O usuário é responsável por manter a confidencialidade de seus dados de acesso,
+              incluindo login e senha. Qualquer atividade realizada com sua conta será de sua responsabilidade.
+            </p>
+            <h3>3. Privacidade</h3>
+            <p>
+              As informações fornecidas pelo usuário serão utilizadas apenas para fins de funcionamento
+              do sistema, respeitando a privacidade e a proteção de dados conforme a legislação vigente.
+            </p>
+            <h3>4. Modificações</h3>
+            <p>
+              Reservamo-nos o direito de alterar estes Termos de Uso a qualquer momento,
+              sem aviso prévio. Recomenda-se a verificação periódica deste conteúdo.
+            </p>
+            <h3>5. Aceitação</h3>
+            <p>
+              Ao marcar a opção “Li e aceito os Termos de Uso”, o usuário declara que leu,
+              compreendeu e concorda com todas as condições aqui apresentadas.
+            </p>
+            <button type="button" class="btn-voltar" @click="closeTerms">Voltar</button>
+          </div>
+        </div>
+        <button type="submit" class="login-button">CADASTRAR</button>
       </form>
-
       <div class="login-footer">
         <p>
-          Não tem uma conta?
-          <a href="/cadastro">CADASTRE-SE</a>
+          Já tem uma conta?
+          <router-link to="/login">ENTRAR</router-link>
         </p>
       </div>
     </div>
@@ -98,16 +78,22 @@ compreendeu e concorda com todas as condições aqui apresentadas.
 
 <script>
 export default {
-  name: 'Login',
+  name: 'Cadastro',
   data() {
     return {
+      name: '',
       email: '',
-      password: ''
+      password: '',
+      confirmPassword: ''
     };
   },
   methods: {
-    handleLogin() {
-      console.log('Login:', this.email, this.password);
+    handleRegister() {
+      if (this.password !== this.confirmPassword) {
+        alert('As senhas não coincidem!');
+        return;
+      }
+      alert('Cadastro realizado com sucesso!');
     },
     openTerms() {
       document.getElementById('termsModal').style.display = 'flex';
@@ -189,11 +175,9 @@ export default {
   display: flex;
   margin: 0px;
 }
-.terms a {
+.terms-link {
   color: #ff7a00;
-  text-decoration: none;
-}
-.terms a:hover {
+  cursor: pointer;
   text-decoration: underline;
 }
 .login-container {
@@ -207,17 +191,12 @@ export default {
   color: #fff;
   font-family: Arial, Helvetica, sans-serif;
 }
-.login-container {
-  position: relative;
-
-}
 .login-container::before {
   content: "FITFORCE";
   position: absolute;
   left: 80px;
   top: 50%;
   transform: translateY(-50%);
-  
   font-size: 245px;
   font-weight: 800;
   letter-spacing: 4px;
@@ -291,22 +270,6 @@ input:focus {
   outline: none;
   border-color: #ff6a00;
 }
-.options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  margin-bottom: 20px;
-}
-.remember {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.forgot {
-  color: #ff6a00;
-  text-decoration: none;
-}
 .login-button {
   width: 100%;
   padding: 14px;
@@ -326,7 +289,7 @@ input:focus {
   text-align: center;
   font-size: 14px;
 }
-.login-footer a {
+.login-footer a, .login-footer .router-link {
   color: #ff6a00;
   font-weight: bold;
   text-decoration: none;
