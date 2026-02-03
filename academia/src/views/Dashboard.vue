@@ -4,7 +4,7 @@
         <h1 class="titulo cores">Alcance Sem Limites</h1>
         <p class="descricao">Treinamento personalizado, equipamentos de última geração e uma comunidade dedicada ao seu sucesso. Comece sua jornada fitness hoje mesmo.</p>
     </div>
-    <a color="primary" class="plans" href="/planos">Ver Planos</a>
+    <router-link color="primary" class="plans" to="/planos">Ver Planos</router-link>
 </template>
 
 <style>
@@ -39,7 +39,7 @@
 }
 .cores {
     background-image: linear-gradient(to right, #ff7f00, #ff0000);
-    -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     top: 38%;
 }

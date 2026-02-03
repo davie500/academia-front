@@ -1,6 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-box">
+      <router-link to="/" class="back-button">← Voltar</router-link>
       <h2 class="welcome">Bem-vindo</h2>
       <p class="subtitle">Entre na sua conta</p>
 
@@ -28,7 +29,7 @@
         </div>
 
         <div class="options">
-          <a href="#" class="forgot">Esqueceu a senha?</a>
+          <router-link to="/esqueci-senha" class="forgot">Esqueceu a senha?</router-link>
         </div>
         <br>
 <div class="terms">
@@ -89,7 +90,7 @@ compreendeu e concorda com todas as condições aqui apresentadas.
       <div class="login-footer">
         <p>
           Não tem uma conta?
-          <a href="/cadastro">CADASTRE-SE</a>
+          <router-link to="/cadastro">CADASTRE-SE</router-link>
         </p>
       </div>
     </div>
@@ -120,6 +121,17 @@ export default {
 </script>
 
 <style scoped>
+.back-button {
+  display: inline-block;
+  color: #ff6a00;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+.back-button:hover {
+  color: #ff7a00;
+  text-decoration: underline;
+}
 .btn-voltar {
   margin-top: 20px;
   width: 100%;
@@ -207,18 +219,13 @@ export default {
   color: #fff;
   font-family: Arial, Helvetica, sans-serif;
 }
-.login-container {
-  position: relative;
-
-}
 .login-container::before {
   content: "FITFORCE";
   position: absolute;
   left: 80px;
   top: 50%;
   transform: translateY(-50%);
-  
-  font-size: 245px;
+  font-size: 200px;
   font-weight: 800;
   letter-spacing: 4px;
   z-index: 0;
@@ -251,7 +258,7 @@ export default {
   position: relative;
   width: 100%;
   max-width: 380px;
-  padding: 32px;
+  padding: 20px;
   background: rgba(15, 15, 15, 0.95);
   border-radius: 14px;
   box-shadow: 0 0 30px rgba(255, 80, 0, 0.25);
@@ -277,7 +284,7 @@ label {
   flex-direction: row;
 }
 input {
-  width: 100%;
+  width: 95%;
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #333;

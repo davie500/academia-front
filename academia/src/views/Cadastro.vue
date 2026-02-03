@@ -1,6 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-box">
+      <router-link to="/" class="back-button">← Voltar</router-link>
       <h2 class="welcome">Cadastro</h2>
       <p class="subtitle">Crie sua conta</p>
       <form @submit.prevent="handleRegister">
@@ -106,6 +107,17 @@ export default {
 </script>
 
 <style scoped>
+.back-button {
+  display: inline-block;
+  color: #ff6a00;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+.back-button:hover {
+  color: #ff7a00;
+  text-decoration: underline;
+}
 .btn-voltar {
   margin-top: 20px;
   width: 100%;
@@ -134,11 +146,10 @@ export default {
   background: #111;
   color: #fff;
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  padding: 25px;
+  max-width: 400px;
+  max-height: 50vh;
+  padding: 20px;
   border-radius: 12px;
-  overflow-y: auto;
   box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
 }
 .modal-content h2 {
@@ -165,7 +176,7 @@ export default {
 .terms {
   display: flex;
   gap: 8px;
-  margin: 15px 0;
+  margin: 10px 0;
   font-size: 14px;
 }
 .terms input[type="checkbox"] {
@@ -182,13 +193,14 @@ export default {
 }
 .login-container {
   position: relative;
-  min-height: 100vh;
+  min-height: 50vh;
   background-size: cover;
   background-position: center;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   color: #fff;
+  padding-top: 5px;
   font-family: Arial, Helvetica, sans-serif;
 }
 .login-container::before {
@@ -197,13 +209,13 @@ export default {
   left: 80px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 245px;
+  font-size: 200px;
   font-weight: 800;
   letter-spacing: 4px;
   z-index: 0;
   pointer-events: none;
 }
-.overlay{
+.overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
@@ -229,15 +241,15 @@ export default {
 .login-box {
   position: relative;
   width: 100%;
-  max-width: 380px;
-  padding: 32px;
+  max-width: 460px;
+  padding: 10px 24px;
   background: rgba(15, 15, 15, 0.95);
   border-radius: 14px;
-  box-shadow: 0 0 30px rgba(255, 80, 0, 0.25);
+  box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
 }
 .welcome {
-  font-size: 40px;
-  margin-bottom: 4px;
+  font-size: 32px;
+  margin-bottom: 2px;
   display: flex;
   justify-content: center;
 }
@@ -246,7 +258,7 @@ export default {
   margin-bottom: 24px;
 }
 .form-group {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 label {
   display: flex;
@@ -256,8 +268,8 @@ label {
   flex-direction: row;
 }
 input {
-  width: 100%;
-  padding: 12px;
+  width: 95%;
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #333;
   background: #0f0f0f;
@@ -272,7 +284,7 @@ input:focus {
 }
 .login-button {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   border-radius: 10px;
   border: none;
   background: linear-gradient(90deg, #ff0000, #ff6a00);
