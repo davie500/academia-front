@@ -9,6 +9,7 @@
         <a class="navbar-item" href="/notes">ANOTAÇÕES</a>
         <a class="navbar-item" href="/trainers">TREINADORES</a>
         <a class="navbar-item" href="/contato">CONTATO</a>
+         <a class="navbar-item" href="/perfil">PERFIL</a>
       </div>
 
       <div class="navbar-end">

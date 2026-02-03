@@ -5,6 +5,7 @@ import Planos from '../views/Planos.vue'
 import Treinadores from '@/views/Treinadores.vue'
 import Anotacoes from '../views/Anotacoes.vue'
 import Cadastro from '../views/Cadastro.vue'
+import PerfilUsuario from '../views/Perfil.usuario.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -13,6 +14,7 @@ const routes = [
   { path: '/trainers' , name: 'Treinadores', component: Treinadores },
   { path: '/notes', name: 'Notas', component: Anotacoes },
   { path: '/cadastro', name: 'Cadastro', component: Cadastro },
+  { path: '/perfil',component: PerfilUsuario },
 ]
 
 const router = createRouter({
