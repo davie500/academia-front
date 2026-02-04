@@ -1,22 +1,22 @@
 <template>
   <nav class="navbar">
     <div class="navbar-brand">
-      <a href="/" class="brand-title">FITFORCE</a>
+      <router-link to="/" class="brand-title">FITFORCE</router-link>
     </div>
 
     <div class="navbar-menu">
       <div class="navbar-start">
-        <a class="navbar-item" href="/notes">ANOTAÇÕES</a>
-        <a class="navbar-item" href="/trainers">TREINADORES</a>
-        <a class="navbar-item" href="/contato">CONTATO</a>
+        <router-link class="navbar-item" to="/notes">ANOTAÇÕES</router-link>
+        <router-link class="navbar-item" to="/trainers">TREINADORES</router-link>
+        <router-link class="navbar-item" to="/contato">CONTATO</router-link>
          <a class="navbar-item" href="/perfil">PERFIL</a>
       </div>
 
       <div class="navbar-end">
         <div class="buttons">
-          <a class="button is-primary" href="/login">
+          <router-link class="button is-primary" to="/login">
             LOGIN
-          </a>
+          </router-link>
         </div>
       </div>
     </div>
@@ -24,9 +24,6 @@
 </template>
 
 <style>
-* {
-  font-family: Arial, Helvetica, sans-serif;
-}
 .navbar {
   background-image: linear-gradient(to right, #dd0909, #e18e12);
   color: white;
@@ -45,6 +42,7 @@
   font-size: 1.5rem;
   color: white;
   text-decoration: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 .navbar-menu {
   display: flex;
