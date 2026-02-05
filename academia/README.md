@@ -40,3 +40,11 @@ npm run dev
 ```sh
 npm run build
 ```
+
+
+
+position static
+margin 2.5
+height 100vh
+gap 1rem
+transform translateX(-110%)

@@ -70,7 +70,7 @@
       <div class="login-footer">
         <p>
           Já tem uma conta?
-          <router-link to="/login">ENTRAR</router-link>
+          <router-link :to="{ name: 'Login' }">ENTRAR</router-link>
         </p>
       </div>
     </div>
@@ -243,7 +243,7 @@ export default {
   width: 100%;
   max-width: 460px;
   padding: 10px 24px;
-  background: rgba(15, 15, 15, 0.95);
+  background: rgba(15, 15, 15, 0.836);
   border-radius: 14px;
   box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
 }

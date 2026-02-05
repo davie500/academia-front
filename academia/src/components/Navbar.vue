@@ -1,10 +1,15 @@
 <template>
   <nav class="navbar">
     <div class="navbar-brand">
+      <button class="navbar-burger" aria-label="menu" aria-expanded="false" @click="toggle">
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+      </button>
       <router-link to="/" class="brand-title">FITFORCE</router-link>
     </div>
 
-    <div class="navbar-menu">
+    <div class="navbar-menu" :class="{ 'is-active': open }">
       <div class="navbar-start">
         <router-link class="navbar-item" to="/notes">ANOTAÇÕES</router-link>
         <router-link class="navbar-item" to="/trainers">TREINADORES</router-link>
@@ -13,14 +18,23 @@
 
       <div class="navbar-end">
         <div class="buttons">
-          <router-link class="button is-primary" to="/login">
-            LOGIN
-          </router-link>
+            <router-link class="button is-primary" to="/login">
+              LOGIN
+            </router-link>
         </div>
       </div>
     </div>
+    <div v-if="open" class="backdrop" @click="toggle"></div>
   </nav>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+const open = ref(false)
+function toggle() {
+  open.value = !open.value
+}
+</script>
 
 <style>
 .navbar {
@@ -100,4 +114,93 @@
 .is-light:hover {
   background-color: #e8e8e8;
 }
+
+.navbar-burger {
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+.burger-line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: white;
+  margin: 4px 0;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.5rem 0.75rem;
+    position: relative;
+  }
+  .navbar-burger {
+    display: inline-block;
+    margin-left: 0.75rem;
+  }
+  .navbar-menu {
+    position: absolute;
+    top: 47px;
+    left: 0;
+    height: 90vh;
+    width: 260px;
+    max-width: 80%;
+    background-image: linear-gradient(to right, #dd0909, #e18e12);
+    color: white;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transform: translateX(-110%);
+    transition: transform 0.25s ease;
+    z-index: 1001;
+  }
+  .navbar-menu.is-active {
+    transform: translateX(0);
+  }
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+  }
+  .navbar-start,
+  .navbar-end {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+    width: 100%;
+  }
+  .navbar-item,
+  .button {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 0.5rem;
+    border-radius: 6px;
+  }
+  .buttons {
+    justify-content: flex-start;
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+}
+
+.is-secondary {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.85);
+  color: white;
+  display: none; /* hidden by default (desktop) */
+}
+.is-secondary:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* show secondary button inside drawer on small screens */
+@media (max-width: 768px) {
+  .is-secondary { display: inline-block; }
+}
+
+/* Desktop keeps original top navbar layout; mobile uses drawer */
 </style>
