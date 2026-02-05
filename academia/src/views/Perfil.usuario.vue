@@ -183,12 +183,6 @@ const info = reactive({
   border-radius: 20px;
   font-size: 12px;
 }
-
-.advanced {
-  border: 1px solid #ff7a00;
-}
-
-
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -201,11 +195,6 @@ const info = reactive({
   border-radius: 15px;
   text-align: center;
 }
-
-.card.active {
-  border: 1px solid #ff7a00;
-}
-
 .card strong {
   font-size: 22px;
 }
@@ -247,7 +236,7 @@ align-items: center;
   padding: 12px;
   border-radius: 10px;
   border: none;
-  background: #2a2a2a;
+  background: linear-gradient(to right, #ff7a00, #ff3d00);
   color: white;
   cursor: pointer;
 }
