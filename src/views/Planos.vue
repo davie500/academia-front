@@ -30,8 +30,9 @@
       <div class="planos-grid">
         <PricingCard
           v-for="plan in planos"
-          :key="plan.id"
+          :key="plan.nome"
           :plan="plan"
+          :isPremium="plan === planoPremium"
         />
       </div>
     </div>
@@ -41,6 +42,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { computed } from 'vue'
 import PricingCard from '../components/PricingCard.vue';
 import api from '../controller/api'
 import LoadingOverlay from '../components/LoadingOverlay.vue';  
@@ -56,12 +58,17 @@ interface Vantagem {
   descricao: string;
 }
 
-interface Plano {
-  id: number;
-  nome: string;
-  preco: string;
-  periodo: string;
-  vantagens: Vantagem[];
+interface ApiPlanoPeriodo {
+  plano: {
+    nome: string
+    vantagens: Vantagem[]
+  }
+  periodo: {
+    nome: 'Mensal' | 'Anual'
+  }
+  preco: {
+    valor: string
+  }
 }
 
 interface PlanoAgrupado {
@@ -76,45 +83,66 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const response = await api.get('/api/planos')
+    const response = await api.get('/api/planoPeriodo')
+    console.log('Resposta da API:', response.data)
 
-    const mapa: Record<string, PlanoAgrupado> = {}
+  const mapa: Record<string, PlanoAgrupado> = {}
 
-    response.data.forEach((plano: Plano) => {
-      if (!mapa[plano.nome]) {
-        mapa[plano.nome] = {
-          nome: plano.nome,
-          mensal: undefined,
-          anual: undefined,
-          vantagens: []
-        }
+  response.data.forEach((item: ApiPlanoPeriodo) => {
+    const nomePlano = item.plano.nome
+
+    if (!mapa[nomePlano]) {
+      mapa[nomePlano] = {
+        nome: nomePlano,
+        mensal: undefined,
+        anual: undefined,
+        vantagens: []
       }
+    }
 
-      if (plano.periodo === 'Mensal') {
-        mapa[plano.nome].mensal = plano.preco
+    const planoAtual = mapa[nomePlano]!
+
+    if (item.periodo.nome === 'Mensal') {
+      planoAtual.mensal = item.preco.valor
+    }
+
+    if (item.periodo.nome === 'Anual') {
+      planoAtual.anual = item.preco.valor
+    }
+
+    item.plano.vantagens.forEach(vantagem => {
+      const existe = planoAtual.vantagens.some(
+        v => v.id === vantagem.id
+      )
+
+      if (!existe) {
+        planoAtual.vantagens.push(vantagem)
       }
-
-      if (plano.periodo === 'Anual') {
-        mapa[plano.nome].anual = plano.preco
-      }
-
-      plano.vantagens.forEach(vantagem => {
-        const existe = mapa[plano.nome].vantagens.some(
-          v => v.id === vantagem.id
-        )
-
-        if (!existe) {
-          mapa[plano.nome].vantagens.push(vantagem)
-        }
-      })
     })
+  })
 
-    planos.value = Object.values(mapa)
+  planos.value = Object.values(mapa)
   } catch (error) {
     console.error('Erro ao carregar planos', error)
   } finally {
     loading.value = false
   }
+})
+
+function getValorMaximo(plano: PlanoAgrupado): number {
+  if (plano.anual) return Number(plano.anual)
+  if (plano.mensal) return Number(plano.mensal)
+  return 0
+}
+
+const planoPremium = computed(() => {
+  if (planos.value.length === 0) return null
+
+  return planos.value.reduce((maisCaro, atual) => {
+    return getValorMaximo(atual) > getValorMaximo(maisCaro)
+      ? atual
+      : maisCaro
+  })
 })
 
 </script>
@@ -126,7 +154,7 @@ onMounted(async () => {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: rgba(0, 0, 0, 0.75);
   background-blend-mode: overlay;
   padding: 48px 16px;
 }
