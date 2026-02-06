@@ -1,7 +1,7 @@
 <template>
   <div :class="['pricing-card', { 'pricing-card--premium': isPremium }]">
     <div v-if="isPremium" class="pricing-card__badge">
-      MAIS POPULAR
+      Opção Popular
     </div>
 
     <div class="pricing-card__content">
