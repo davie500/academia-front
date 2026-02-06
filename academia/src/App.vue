@@ -6,7 +6,7 @@
 
 <script setup>
   import Navbar from './components/Navbar.vue'
-  import fundo from '../assets/fundo.png'
+  import fundo from '../images/fundo.png'
   import { useRoute } from 'vue-router'
   import { computed } from 'vue'
 
