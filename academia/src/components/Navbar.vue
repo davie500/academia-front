@@ -8,14 +8,12 @@
       </button>
       <router-link to="/" class="brand-title">FITFORCE</router-link>
     </div>
-
     <div class="navbar-menu" :class="{ 'is-active': open }">
       <div class="navbar-start">
         <router-link class="navbar-item" to="/notes">ANOTAÇÕES</router-link>
         <router-link class="navbar-item" to="/trainers">TREINADORES</router-link>
         <router-link class="navbar-item" to="/contato">CONTATO</router-link>
       </div>
-
       <div class="navbar-end">
         <div class="buttons">
             <router-link class="button is-primary" to="/login">
@@ -28,13 +26,17 @@
   </nav>
 </template>
 
+
 <script setup lang="ts">
 import { ref } from 'vue'
+
 const open = ref(false)
+
 function toggle() {
   open.value = !open.value
 }
 </script>
+
 
 <style>
 .navbar {
@@ -56,6 +58,11 @@ function toggle() {
   color: white;
   text-decoration: none;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+}
+.brand-title:hover {
+  transform: translate(-50%, -50%) scale(1.1);
 }
 .navbar-menu {
   display: flex;
@@ -114,7 +121,6 @@ function toggle() {
 .is-light:hover {
   background-color: #e8e8e8;
 }
-
 .navbar-burger {
   display: none;
   background: transparent;
@@ -134,6 +140,7 @@ function toggle() {
   .navbar {
     padding: 0.5rem 0.75rem;
     position: relative;
+    inset: 0;
   }
   .navbar-burger {
     display: inline-block;
@@ -143,8 +150,8 @@ function toggle() {
     position: absolute;
     top: 47px;
     left: 0;
-    height: 90vh;
-    width: 260px;
+    height: 88vh;
+    width: 180px;
     max-width: 80%;
     background-image: linear-gradient(to right, #dd0909, #e18e12);
     color: white;
@@ -197,10 +204,7 @@ function toggle() {
   background: rgba(255,255,255,0.06);
 }
 
-/* show secondary button inside drawer on small screens */
 @media (max-width: 768px) {
   .is-secondary { display: inline-block; }
 }
-
-/* Desktop keeps original top navbar layout; mobile uses drawer */
 </style>

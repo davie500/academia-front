@@ -15,7 +15,7 @@ const props = defineProps({
 </script>
 
 <style scoped>
-@import "../assets/styles/variables.css";
+@import "@/assets/styles/variables.css";
 
 .loading-overlay{
   position:fixed;

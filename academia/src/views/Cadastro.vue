@@ -1,7 +1,6 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <router-link to="/" class="back-button">← Voltar</router-link>
       <h2 class="welcome">Cadastro</h2>
       <p class="subtitle">Crie sua conta</p>
       <form @submit.prevent="handleRegister">
@@ -72,6 +71,7 @@
           Já tem uma conta?
           <router-link :to="{ name: 'Login' }">ENTRAR</router-link>
         </p>
+        <router-link :to="{ name: 'Dashboard' }" class="back-button">Página inicial</router-link>
       </div>
     </div>
   </div>
@@ -200,7 +200,7 @@ export default {
   justify-content: center;
   align-items: flex-start;
   color: #fff;
-  padding-top: 5px;
+  padding-top: 15px;
   font-family: Arial, Helvetica, sans-serif;
 }
 .login-container::before {
@@ -245,10 +245,10 @@ export default {
   padding: 10px 24px;
   background: rgba(15, 15, 15, 0.836);
   border-radius: 14px;
-  box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
+  border: 1px solid gray;
 }
 .welcome {
-  font-size: 32px;
+  font-size: 22px;
   margin-bottom: 2px;
   display: flex;
   justify-content: center;
@@ -256,6 +256,8 @@ export default {
 .subtitle {
   color: #ff6a00;
   margin-bottom: 24px;
+  text-align: center;
+  font-size: 12px;
 }
 .form-group {
   margin-bottom: 12px;
@@ -316,4 +318,5 @@ input:focus {
 .footer-text span {
   color: #ff6a00;
 }
+
 </style>

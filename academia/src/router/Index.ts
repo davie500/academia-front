@@ -5,6 +5,8 @@ import Login from '../views/Login.vue'
 import Treinadores from '../views/Treinadores.vue'
 import Anotacoes from '../views/Anotacoes.vue'
 import Cadastro from '../views/Cadastro.vue'
+// import Pagamento from '../views/Pagamento.vue'
+// import Loading from '../components/LoadingOverlay.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -13,6 +15,8 @@ const routes = [
   { path: '/trainers' , name: 'Treinadores', component: Treinadores },
   { path: '/notes', name: 'Notas', component: Anotacoes },
   { path: '/cadastro', name: 'Cadastro', component: Cadastro },
+  // { path: '/pagamento', name: 'Pagamento', component: Pagamento },
+  // { path: '/loading', name: 'Loading', component: Loading },
 ]
 
 const router = createRouter({

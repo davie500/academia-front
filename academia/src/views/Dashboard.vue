@@ -100,7 +100,6 @@
     .container {
         box-sizing: border-box;
         padding: 2rem 1rem;
-        min-height: 100vh;
     }
     .titulo {
         position: static;
