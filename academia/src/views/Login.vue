@@ -80,6 +80,7 @@
           Não tem uma conta?
           <router-link :to="{ name: 'Cadastro' }">Cadastre-se</router-link>
         </p>
+        <br>
         <router-link :to="{ name: 'Dashboard' }" class="back-button">Página inicial</router-link>
       </div>
     </div>
@@ -190,6 +191,11 @@ export default {
   display: flex;
   margin: 0px;
 }
+.terms-link {
+  color: #ff7a00;
+  cursor: pointer;
+  text-decoration: underline;
+}
 .terms a {
   color: #ff7a00;
   text-decoration: none;
@@ -260,7 +266,7 @@ export default {
 }
 .subtitle {
   color: #ff6a00;
-  margin-bottom: 24px;
+  margin: 24px 12px;
   text-align: center;
   font-size: 12px;
 }

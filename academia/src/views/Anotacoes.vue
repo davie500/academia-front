@@ -1,40 +1,46 @@
 <template>
   <div class="page">
-    <header class="header">
-      <div class="title">
-        <span class="icon">•</span>
-        <h1>Minhas Anotações</h1>
-      </div>
-      <button class="new-note" @click="openNew">
+    <div v-if="notes.length === 0" class="empty-state">
+      <p class="empty-message">Nenhuma anotação ainda</p>
+      <button class="new-note2" @click="openNew">
         + Nova Anotação
       </button>
-    </header>
-    <section class="notes">
-      <transition-group name="note" tag="div" class="notes-grid">
-        <div
-          v-for="note in notes"
-          :key="note.id"
-          class="note-card"
-        >
-          <div class="note-header">
-            <h2>{{ note.title || "Sem título" }}</h2>
-
-            <div class="actions">
-              <span @click="edit(note)">✎</span>
-              <span @click="remove(note.id)">✖</span>
-            </div>
-          </div>
-          <p class="content">
-            {{ note.content.slice(0, 120) }}
-            <span v-if="note.content.length > 120">...</span>
-          </p>
-          <span class="date">{{ formatDate(note.date) }}</span>
+    </div>
+    <div v-else class="with-notes">
+      <header class="header">
+        <div class="title">
+          <span class="icon">•</span>
+          <h1>Minhas Anotações</h1>
         </div>
-      </transition-group>
-      <p v-if="notes.length === 0" class="empty">
-        Nenhuma anotação ainda
-      </p>
-    </section>
+        <button class="new-note" @click="openNew">
+          + Nova Anotação
+        </button>
+      </header>
+      <section class="notes">
+        <transition-group name="note" tag="div" class="notes-grid">
+          <div
+            v-for="note in notes"
+            :key="note.id"
+            class="note-card"
+          >
+            <div class="note-header">
+              <h2>{{ note.title || "Sem título" }}</h2>
+
+              <div class="actions">
+                <span @click="edit(note)">✎</span>
+                <span @click="remove(note.id)">✖</span>
+              </div>
+            </div>
+            <p class="content">
+              {{ note.content.slice(0, 120) }}
+              <span v-if="note.content.length > 120">...</span>
+            </p>
+            <span class="date">{{ formatDate(note.date) }}</span>
+          </div>
+        </transition-group>
+      </section>
+    </div>
+
     <div v-if="showModal" class="overlay" @click.self="close">
       <div class="modal">
         <input class="input" placeholder="Título" v-model="current.title" />
@@ -47,11 +53,13 @@
     </div>
 
     <transition name="toast">
-      <div v-if="toast.visible" class="toast" :class="{ confirm: toast.confirm }" role="status">
-        <div class="toast-message">{{ toast.message }}</div>
-        <div v-if="toast.confirm" class="toast-actions">
-          <button class="btn btn-cancel" @click="confirmToastCancel">Cancelar</button>
-          <button class="btn btn-confirm" @click="confirmToastConfirm">Excluir</button>
+      <div v-if="toast.visible" class="toast-overlay">
+        <div class="toast" :class="{ confirm: toast.confirm }" role="status">
+          <div class="toast-message">{{ toast.message }}</div>
+          <div v-if="toast.confirm" class="toast-actions">
+            <button class="btn btn-cancel" @click="confirmToastCancel">Cancelar</button>
+            <button class="btn btn-confirm" @click="confirmToastConfirm">Excluir</button>
+          </div>
         </div>
       </div>
     </transition>
@@ -186,6 +194,25 @@ function formatDate(date) {
   padding: 32px;
   font-family: "Segoe UI", sans-serif;
 }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  min-height: 100vh;
+  padding: 32px;
+}
+.empty-message {
+  color: #aaa;
+  font-size: 22px;
+  text-align: center;
+}
+.with-notes {
+  display: flex;
+  flex-direction: column;
+}
 .header {
   display: flex;
   justify-content: space-between;
@@ -208,15 +235,32 @@ function formatDate(date) {
 .new-note {
   background: linear-gradient(90deg, #ff0000, #ff6a00);
   border: none;
-  padding: 12px 22px;
+  padding: 18px 22px;
   border-radius: 12px;
   color: #fff;
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(255, 60, 0, 0.6);
   transition: 0.2s;
+  font-size: 15px;
 }
 .new-note:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(255, 90, 0, 0.9);
+}
+.new-note2 {
+  background: linear-gradient(90deg, #ff0000, #ff6a00);
+  border: none;
+  padding: 20px 32px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(255, 60, 0, 0.6);
+  transition: 0.2s;
+  font-size: 20px;
+}
+.new-note2:hover {
   transform: translateY(-2px);
   box-shadow: 0 0 30px rgba(255, 90, 0, 0.9);
 }
@@ -316,42 +360,54 @@ function formatDate(date) {
   border-radius: 8px;
   cursor: pointer;
 }
-.toast {
+.toast-overlay {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
-  background: rgba(20,20,20,0.96);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+}
+.toast {
+  position: relative;
+  background: rgba(20,20,20,0.98);
   border: 1px solid rgba(255,255,255,0.04);
   color: #fff;
-  padding: 12px 16px;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  padding: 24px 32px;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 16px;
   align-items: center;
-  min-width: 220px;
-  max-width: 380px;
+  justify-content: center;
+  min-width: 380px;
+  max-width: 500px;
   z-index: 9999;
 }
 .toast.confirm {
-  min-width: 300px;
+  min-width: 420px;
 }
 .toast-message {
   flex: 1;
-  font-size: 14px;
-  color: #ddd;
+  font-size: 16px;
+  color: #fff;
+  text-align: center;
 }
 .toast-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
+  justify-content: center;
 }
 .toast-actions .btn {
-  padding: 6px 10px;
+  padding: 10px 18px;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 600;
+  font-size: 14px;
 }
 .toast-actions .btn-cancel {
   background: transparent;
@@ -364,7 +420,6 @@ function formatDate(date) {
   box-shadow: 0 4px 14px rgba(255,90,0,0.15);
 }
 
-/* List animation (enter/leave) */
 .notes-grid {
   display: flex;
   gap: 24px;
@@ -380,7 +435,6 @@ function formatDate(date) {
   transition: all 240ms cubic-bezier(.2,.8,.2,1);
 }
 
-/* Toast animation */
 .toast-enter-from {
   opacity: 0;
   transform: translateY(12px) scale(0.98);

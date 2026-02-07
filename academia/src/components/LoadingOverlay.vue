@@ -7,7 +7,9 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
+import { defineProps } from 'vue'
+
 const props = defineProps({
   show: { type: Boolean, required: true },
   message: { type: String, default: 'Carregando...' }
@@ -15,7 +17,7 @@ const props = defineProps({
 </script>
 
 <style scoped>
-@import "@/assets/styles/variables.css";
+@import "../assets/styles/variables.css";
 
 .loading-overlay{
   position:fixed;
@@ -23,7 +25,7 @@ const props = defineProps({
   display:flex;
   align-items:center;
   justify-content:center;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0,0,0,1);
   z-index:1200;
 }
 .panel{

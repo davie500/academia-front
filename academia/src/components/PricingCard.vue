@@ -1,7 +1,7 @@
 <template>
   <div :class="['pricing-card', { 'pricing-card--premium': isPremium }]">
     <div v-if="isPremium" class="pricing-card__badge">
-      MAIS POPULAR
+      Opção Popular
     </div>
 
     <div class="pricing-card__content">
@@ -238,20 +238,16 @@ function assinarPlano() {
   background: #ff5722;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .pricing-card {
     padding: 24px;
   }
-
   .pricing-card--premium {
     transform: scale(1);
   }
-
   .pricing-card__title {
     font-size: 20px;
   }
-
   .pricing-card__amount {
     font-size: 32px;
   }

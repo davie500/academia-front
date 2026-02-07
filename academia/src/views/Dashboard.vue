@@ -4,13 +4,8 @@
         <h1 class="titulo cores">Alcance Sem Limites</h1>
         <p class="descricao">Treinamento personalizado, equipamentos de última geração e uma comunidade dedicada ao seu sucesso. Comece sua jornada fitness hoje mesmo.</p>
     </div>
-    <router-link color="primary" class="plans" to="/planos">Ver Planos</router-link>
+    <router-link color="primary" class="plans" :to="{ name: 'Planos'}">Ver Planos</router-link>
 </template>
-
-
-<script setup lang="ts">
-// import Planos from './Planos.vue';
-</script>
 
 
 <style>

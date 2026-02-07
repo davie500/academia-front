@@ -6,17 +6,19 @@
         <span class="burger-line"></span>
         <span class="burger-line"></span>
       </button>
-      <router-link to="/" class="brand-title">FITFORCE</router-link>
+      <router-link :to="{ name: 'Dashboard'}" class="brand-title">FITFORCE</router-link>
     </div>
+
     <div class="navbar-menu" :class="{ 'is-active': open }">
       <div class="navbar-start">
-        <router-link class="navbar-item" to="/notes">ANOTAÇÕES</router-link>
-        <router-link class="navbar-item" to="/trainers">TREINADORES</router-link>
-        <router-link class="navbar-item" to="/contato">CONTATO</router-link>
+        <router-link class="navbar-item" :to="{ name: 'Notas'}">ANOTAÇÕES</router-link>
+        <router-link class="navbar-item" :to="{ name: 'Treinos'}">TREINOS</router-link>
+        <a class="navbar-item" href="#">PERFIL</a>
       </div>
+
       <div class="navbar-end">
         <div class="buttons">
-            <router-link class="button is-primary" to="/login">
+            <router-link class="button is-primary" :to="{ name: 'Login'}">
               LOGIN
             </router-link>
         </div>
@@ -26,17 +28,14 @@
   </nav>
 </template>
 
-
 <script setup lang="ts">
+import type router from '@/router/Index';
 import { ref } from 'vue'
-
 const open = ref(false)
-
 function toggle() {
   open.value = !open.value
 }
 </script>
-
 
 <style>
 .navbar {
@@ -58,11 +57,6 @@ function toggle() {
   color: white;
   text-decoration: none;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  transform: translate(-50%, -50%);
-  transition: all 0.3s ease;
-}
-.brand-title:hover {
-  transform: translate(-50%, -50%) scale(1.1);
 }
 .navbar-menu {
   display: flex;
@@ -121,6 +115,7 @@ function toggle() {
 .is-light:hover {
   background-color: #e8e8e8;
 }
+
 .navbar-burger {
   display: none;
   background: transparent;
@@ -140,18 +135,17 @@ function toggle() {
   .navbar {
     padding: 0.5rem 0.75rem;
     position: relative;
-    inset: 0;
   }
   .navbar-burger {
     display: inline-block;
     margin-left: 0.75rem;
   }
   .navbar-menu {
-    position: absolute;
-    top: 47px;
+    position: fixed;
+    top: 0;
     left: 0;
-    height: 88vh;
-    width: 180px;
+    height: 100vh;
+    width: 260px;
     max-width: 80%;
     background-image: linear-gradient(to right, #dd0909, #e18e12);
     color: white;
@@ -166,12 +160,14 @@ function toggle() {
   .navbar-menu.is-active {
     transform: translateX(0);
   }
+
   .backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.45);
     z-index: 1000;
   }
+
   .navbar-start,
   .navbar-end {
     display: flex;
@@ -198,7 +194,7 @@ function toggle() {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.85);
   color: white;
-  display: none; /* hidden by default (desktop) */
+  display: none;
 }
 .is-secondary:hover {
   background: rgba(255,255,255,0.06);

@@ -1,22 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
-// import Planos from '../views/Planos.vue'
-import Treinadores from '../views/Treinadores.vue'
+import Planos from '../views/Planos.vue'
+import Treinos from '../views/Treino.vue'
 import Anotacoes from '../views/Anotacoes.vue'
 import Cadastro from '../views/Cadastro.vue'
-// import Pagamento from '../views/Pagamento.vue'
-// import Loading from '../components/LoadingOverlay.vue'
+import Pagamento from '../views/Pagamento.vue'
+// import Perfil from '../views/Perfil.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/login', name: 'Login', component: Login },
-  // { path: '/planos', name: 'Planos', component: Planos },
-  { path: '/trainers' , name: 'Treinadores', component: Treinadores },
-  { path: '/notes', name: 'Notas', component: Anotacoes },
+  { path: '/planos', name: 'Planos', component: Planos },
+  { path: '/treinos', name: 'Treinos', component: Treinos },
+  { path: '/notas', name: 'Notas', component: Anotacoes },
   { path: '/cadastro', name: 'Cadastro', component: Cadastro },
-  // { path: '/pagamento', name: 'Pagamento', component: Pagamento },
-  // { path: '/loading', name: 'Loading', component: Loading },
+  { path: '/pagamento', name: 'Pagamento', component: Pagamento },
+  // { path: '/perfil', name: 'Perfil', component: Perfil },
 ]
 
 const router = createRouter({

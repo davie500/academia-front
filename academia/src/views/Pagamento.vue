@@ -7,7 +7,7 @@
   
   <div v-if="!loading" class="pagina-pagamento">
     <div class="container">
-      <router-link class="voltar" to="/planos">← Voltar para planos</router-link>
+      <a class="voltar" href="/planos">← Voltar para planos</a>
 
       <header class="cabecalho">
         <h1>Finalize sua <span class="destaque">Assinatura</span></h1>
@@ -227,14 +227,15 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const { data } = await api.get('/api/planos')
+    const { data } = await api.get('/api/planoPeriodo')
 
-    data.forEach((plano: any) => {
-      const nomePlano = plano.nome.toLowerCase() as 'basico' | 'plus'
+    data.forEach((item: any) => {
+      const nomePlano = item.plano.nome.toLowerCase() as 'basico' | 'plus'
+
       const periodo =
-        plano.periodo.toLowerCase() === 'mensal' ? 'mensal' : 'anual'
+        item.periodo.nome === 'Mensal' ? 'mensal' : 'anual'
 
-      precos.value[nomePlano][periodo] = Number(plano.preco)
+      precos.value[nomePlano][periodo] = Number(item.preco.valor)
     })
   } catch (error) {
     console.error('Erro ao carregar planos', error)
@@ -243,6 +244,8 @@ onMounted(async () => {
   }
 })
 </script>
+
+
 
 
 <style scoped>

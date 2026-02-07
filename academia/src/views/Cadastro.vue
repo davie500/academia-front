@@ -1,5 +1,10 @@
 <template>
   <div class="login-container">
+    <div class="toast-container">
+      <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type]">
+        {{ toast.message }}
+      </div>
+    </div>
     <div class="login-box">
       <h2 class="welcome">Cadastro</h2>
       <p class="subtitle">Crie sua conta</p>
@@ -29,7 +34,6 @@
         </div>
         <div id="termsModal" class="modal">
           <div class="modal-content">
-            <span class="close" @click="closeTerms">x</span>
             <h2>Termos de Uso</h2>
             <p>
               Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
@@ -58,7 +62,7 @@
             </p>
             <h3>5. Aceitação</h3>
             <p>
-              Ao marcar a opção “Li e aceito os Termos de Uso”, o usuário declara que leu,
+              Ao marcar a opção "Li e aceito os Termos de Uso", o usuário declara que leu,
               compreendeu e concorda com todas as condições aqui apresentadas.
             </p>
             <button type="button" class="btn-voltar" @click="closeTerms">Voltar</button>
@@ -69,8 +73,9 @@
       <div class="login-footer">
         <p>
           Já tem uma conta?
-          <router-link :to="{ name: 'Login' }">ENTRAR</router-link>
+          <router-link :to="{ name: 'Login' }">Entrar</router-link>
         </p>
+        <br>
         <router-link :to="{ name: 'Dashboard' }" class="back-button">Página inicial</router-link>
       </div>
     </div>
@@ -78,6 +83,8 @@
 </template>
 
 <script>
+import api from '@/controller/api';
+
 export default {
   name: 'Cadastro',
   data() {
@@ -85,28 +92,126 @@ export default {
       name: '',
       email: '',
       password: '',
-      confirmPassword: ''
-    };
+      confirmPassword: '',
+      toasts: []
+    }
   },
   methods: {
-    handleRegister() {
-      if (this.password !== this.confirmPassword) {
-        alert('As senhas não coincidem!');
-        return;
-      }
-      alert('Cadastro realizado com sucesso!');
+    showToast(message, type = 'error') {
+      const id = Date.now()
+      this.toasts.push({ id, message, type })
+      setTimeout(() => {
+        this.toasts = this.toasts.filter(t => t.id !== id)
+      }, 4000)
     },
+
+    handleRegister() {
+      // Validação de campos vazios
+      if (!this.name || !this.email || !this.password || !this.confirmPassword) {
+        this.showToast('Todos os campos são obrigatórios', 'error')
+        return
+      }
+
+      // Validação de senhas
+      if (this.password !== this.confirmPassword) {
+        this.showToast('As senhas não coincidem', 'error')
+        return
+      }
+
+      // Validação de email básica
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(this.email)) {
+        this.showToast('E-mail inválido', 'error')
+        return
+      }
+
+      const body = {
+        nome: this.name,
+        email: this.email,
+        password: this.password
+      }
+
+      async function registerUser() {
+        try {
+          const response = await api.post('/api/usuarios', body)
+          this.showToast('Cadastro realizado com sucesso!', 'success')
+          console.log('Resposta da API:', response.data)
+          
+          setTimeout(() => {
+            this.name = ''
+            this.email = ''
+            this.password = ''
+            this.confirmPassword = ''
+            document.getElementById('terms').checked = false
+          }, 1500)
+
+          setTimeout(() => {
+            this.$router.push({ name: 'Login' })
+          }, 2000)
+        } catch (error) {
+          const errorMsg = error.response?.data?.message || 'Erro ao registrar usuário'
+          this.showToast(errorMsg, 'error')
+          console.error('Erro ao registrar usuário:', error)
+        }
+      }
+
+      registerUser.call(this)
+    },
+
     openTerms() {
-      document.getElementById('termsModal').style.display = 'flex';
+      document.getElementById('termsModal').style.display = 'flex'
     },
     closeTerms() {
-      document.getElementById('termsModal').style.display = 'none';
+      document.getElementById('termsModal').style.display = 'none'
     }
   }
-};
+}
 </script>
 
 <style scoped>
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease-out;
+  min-width: 300px;
+}
+
+.toast.error {
+  background: #dc2626;
+  color: #fff;
+  border-left: 4px solid #991b1b;
+}
+
+.toast.success {
+  background: #10b981;
+  color: #fff;
+  border-left: 4px solid #047857;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .back-button {
   display: inline-block;
   color: #ff6a00;
@@ -146,11 +251,13 @@ export default {
   background: #111;
   color: #fff;
   width: 90%;
-  max-width: 400px;
-  max-height: 50vh;
-  padding: 20px;
+  max-width: 600px;
+  max-height: 80vh;
+  padding: 25px;
   border-radius: 12px;
+  overflow-y: auto;
   box-shadow: 0 0 20px rgba(255, 122, 0, 0.4);
+  position: relative;
 }
 .modal-content h2 {
   margin-bottom: 15px;
@@ -183,7 +290,6 @@ export default {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  display: flex;
   margin: 0px;
 }
 .terms-link {
@@ -200,7 +306,7 @@ export default {
   justify-content: center;
   align-items: flex-start;
   color: #fff;
-  padding-top: 15px;
+  padding-top: 37px;
   font-family: Arial, Helvetica, sans-serif;
 }
 .login-container::before {
@@ -255,7 +361,7 @@ export default {
 }
 .subtitle {
   color: #ff6a00;
-  margin-bottom: 24px;
+  margin: 12px;
   text-align: center;
   font-size: 12px;
 }
@@ -270,7 +376,7 @@ label {
   flex-direction: row;
 }
 input {
-  width: 95%;
+  width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #333;
@@ -318,5 +424,4 @@ input:focus {
 .footer-text span {
   color: #ff6a00;
 }
-
 </style>
