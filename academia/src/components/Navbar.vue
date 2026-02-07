@@ -8,7 +8,6 @@
       <div class="navbar-start">
         <router-link class="navbar-item" to="/notes">ANOTAÇÕES</router-link>
         <router-link class="navbar-item" to="/trainers">TREINADORES</router-link>
-        <router-link class="navbar-item" to="/contato">CONTATO</router-link>
          <a class="navbar-item" href="/perfil">PERFIL</a>
       </div>
 

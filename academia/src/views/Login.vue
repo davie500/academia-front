@@ -98,17 +98,34 @@ compreendeu e concorda com todas as condições aqui apresentadas.
 </template>
 
 <script>
+import axios from 'axios';
+import { errorMessages } from 'vue/compiler-sfc';
 export default {
   name: 'Login',
   data() {
     return {
       email: '',
-      password: ''
+      password: '',
     };
   },
   methods: {
-    handleLogin() {
+    async handleLogin() {
+      const response = await axios.post('http://127.0.0.1:8000/api/auth/login',
+        {
+         email: this.email,
+         password: this. password
+        }
+      );
+
       console.log('Login:', this.email, this.password);
+
+      if (response.data.token){
+
+        localStorage.setItem('token', response.data.token);
+
+        this.$router.push('/');
+      }
+
     },
     openTerms() {
       document.getElementById('termsModal').style.display = 'flex';

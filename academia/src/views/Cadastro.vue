@@ -78,6 +78,7 @@
 </template>
 
 <script>
+
 export default {
   name: 'Cadastro',
   data() {
