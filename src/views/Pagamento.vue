@@ -58,26 +58,9 @@
 
             <div class="conteudo-pagamento">
               <form v-if="formaPagamento === 'cartao'" class="formulario">
-                <label>Número do Cartão</label>
-                <input placeholder="0000 0000 0000 0000" />
-
-                <label>Nome no Cartão</label>
-                <input placeholder="Nome como está no cartão" />
-
-                <div class="linha">
-                  <div class="coluna">
-                    <label>Validade</label>
-                    <input placeholder="MM/AA" />
-                  </div>
-                  <div class="coluna">
-                    <label>CVV</label>
-                    <input placeholder="000" />
-                  </div>
-                </div>
-
-                <button class="primary">
-                  Finalizar Pagamento – {{ precoFormatado }}
-                </button>
+                <label>Pagamento com Cartão</label>
+                <div id="cardPaymentBrick" style="margin-top:12px;"></div>
+                <div style="margin-top:12px; text-align:right; color:var(--color-primary); font-weight:800;">Valor: {{ precoFormatado }}</div>
               </form>
 
               <div v-if="formaPagamento === 'pix'" class="area-pix">
@@ -158,7 +141,7 @@
 
 <script setup lang="ts">
 import api from '@/controller/api'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 
@@ -243,6 +226,82 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+// Mercado Pago Brick integration
+const brickController = ref<any>(null)
+
+async function initMercadoPago() {
+  try {
+    const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
+    const MpConstructor = (window as any).MercadoPago
+    const mp = MpConstructor ? new MpConstructor(publicKey, { locale: 'pt-BR' }) : null
+
+    if (!mp) {
+      console.warn('MercadoPago SDK não disponível no window')
+      return
+    }
+
+    const bricks = mp.bricks()
+    // garante um valor mínimo para visualização do Brick
+    const amount = Math.max(1, Number((preco.value || 0).toFixed(2)))
+
+    bricks
+      .create('cardPayment', 'cardPaymentBrick', {
+        initialization: { amount },
+        customization: {
+          visual: { style: { theme: 'dark' } },
+          paymentButton: { text: 'Pagar agora' },
+        },
+        callbacks: {
+          onReady: () => console.log('Brick montado ✔ - amount:', amount),
+          onSubmit: async (cardData: any) => {
+            try {
+              console.log('Dados recebidos do Brick:', cardData)
+              loading.value = true
+              // enviar token ao backend para processar o pagamento
+              await api.post('/pagamento', {
+                metodo: 'credit_card',
+                tokenCartao: cardData.token,
+                valor: amount,
+              })
+              alert('Pagamento enviado. Aguarde confirmação por e-mail.')
+            } catch (err) {
+              console.error('Erro no processamento do pagamento:', err)
+              alert('Erro ao processar pagamento.')
+            } finally {
+              loading.value = false
+            }
+          },
+          onError: (err: any) => {
+            console.error('Erro no Brick:', err)
+            alert('Erro no Brick do Mercado Pago.')
+          },
+        },
+      })
+      .then((controller: any) => (brickController.value = controller))
+  } catch (err) {
+    console.error('initMercadoPago erro:', err)
+  }
+}
+
+function loadMercadoPagoSdk() {
+  if ((window as any).MercadoPago) {
+    initMercadoPago()
+    return
+  }
+
+  const script = document.createElement('script')
+  script.src = 'https://sdk.mercadopago.com/js/v2'
+  script.onload = () => initMercadoPago()
+  document.body.appendChild(script)
+}
+
+watch(formaPagamento, (val) => {
+  if (val === 'cartao') loadMercadoPagoSdk()
+})
+
+// se iniciar já em cartão, carrega SDK
+if (formaPagamento.value === 'cartao') loadMercadoPagoSdk()
 </script>
 
 
@@ -542,6 +601,14 @@ onMounted(async () => {
 
 .card + .card {
   margin-top: 18px;
+}
+
+/* Estilos para o container do Mercado Pago Brick */
+#cardPaymentBrick {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.04);
 }
 
 @media (max-width: 1000px) {
