@@ -12,14 +12,14 @@
         <button>🚪</button>
       </div>
     </div>
-
-
+    
+    
     <div class="user-info">
       <div class="avatar">
         <span>👤</span>
         <div class="status"></div>
       </div>
-
+      
       <div class="user-data">
         <h3>{{ user.name }}</h3>
         <p>{{ user.email }}</p>
@@ -41,14 +41,14 @@
         <h4>🎯 Meta Mensal</h4>
         <strong>{{ stats.goal }}%</strong>
       </div>
-
+      
       <div class="card">
         <h4>🔥 Sequência</h4>
         <strong>{{ stats.streak }} dias</strong>
       </div>
     </div>
-
- 
+    
+    
     <h3 class="section-title">Informações Pessoais</h3>
 
     <div class="info-grid">
@@ -61,19 +61,19 @@
         <span>Peso</span>
         <strong>{{ info.weight }}</strong>
       </div>
-
+      
       <div class="info-card">
         <span>Objetivo</span>
         <strong>{{ info.goal }}</strong>
       </div>
-
+      
       <div class="info-card">
         <span>Frequência</span>
         <strong>{{ info.frequency }}</strong>
       </div>
     </div>
 
-
+    
     <div class="actions">
       <button class="btn primary">Editar Perfil</button>
       <button class="btn">Meus Treinos</button>
@@ -82,15 +82,30 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import api from '@/controller/api';
+import { reactive, onMounted } from 'vue'
+
 
 
 const user = reactive({
-  name: 'Carlos Silva',
-  email: 'carlos.silva@email.com',
-  memberSince: 'Janeiro 2024',
-  level: 'Avançado'
+  name: '',
+  email: '',
+  memberSince: 'janeiro',
+  level: 'avançado'
 })
+
+const loadprofile = async () =>{
+  try{
+    const res = await api.get("/auth/me");
+    
+    const data = res.data;
+    
+    user.name = data.nome;
+    user.email = data.email;
+
+  }
+  catch (e) {('Erro ao carregar perfil:')};
+}
 
 
 const stats = reactive({
@@ -106,6 +121,12 @@ const info = reactive({
   goal: 'Ganho de massa',
   frequency: '5x por semana'
 })
+
+
+
+onMounted(() => {
+  loadprofile();
+});
 </script>
 
 <style scoped>
