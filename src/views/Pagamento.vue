@@ -145,7 +145,7 @@
 
 <script setup lang="ts">
 import api from '@/controller/api'
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 
@@ -222,16 +222,20 @@ async function gerarPixQrCode() {
 
   loading.value = true
   
-  try {
-    const { data } = await api.post('/pagamento', {
+    try {
+    const { data } = await api.post('/api/pagamento', {
       plano_id: planoSelecionado.value === 'plus' ? 2 : 1,
-      metodo: 'pix'
+      metodo: 'pix',
+      nome: dadosPix.value.nome,
+      cpf: dadosPix.value.cpf,
+      periodo: periodo.value
     })
 
     pixGerado.value = true
     
     await nextTick()
     
+    // Exibe QR Code retornado pelo backend (base64)
     await initPixBrick(data.pix?.qr_code_base64)
   } catch (err) {
     console.error('Erro ao gerar PIX:', err)
@@ -244,15 +248,9 @@ async function gerarPixQrCode() {
 function voltarFormularioPix() {
   pixGerado.value = false
   dadosPix.value = { nome: '', cpf: '' }
-  
-  if (pixBrickController.value) {
-    try {
-      pixBrickController.value.unmount()
-    } catch (err) {
-      console.log('Erro ao desmontar PIX Brick:', err)
-    }
-    pixBrickController.value = null
-  }
+  // Limpa o container do PIX (renderizamos apenas a imagem base64 retornada pelo backend)
+  const pixContainer = document.getElementById('pixPaymentBrick')
+  if (pixContainer) pixContainer.innerHTML = ''
 }
 
 onMounted(async () => {
@@ -279,7 +277,6 @@ onMounted(async () => {
 })
 
 const brickController = ref<any>(null)
-const pixBrickController = ref<any>(null)
 const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
 
 async function loadMercadoPagoSdk() {
@@ -307,20 +304,15 @@ async function loadMercadoPagoSdk() {
 }
 
 async function initCardBrick() {
-  if (pixBrickController.value) {
-    try {
-      await pixBrickController.value.unmount()
-    } catch (err) {
-      console.log('Erro ao desmontar PIX Brick:', err)
-    }
-    pixBrickController.value = null
-  }
+  // Limpa conteúdo de PIX caso exista (renderizamos apenas a imagem base64)
+  const pixContainer = document.getElementById('pixPaymentBrick')
+  if (pixContainer) pixContainer.innerHTML = ''
 
   if (brickController.value) return
 
   await nextTick()
 
-  try {
+    try {
     const MpConstructor = (window as any).MercadoPago
     if (!MpConstructor) {
       console.warn('MercadoPago SDK não disponível')
@@ -344,13 +336,14 @@ async function initCardBrick() {
         onSubmit: async (cardData: any) => {
           try {
             loading.value = true
-            await api.post('/pagamento', {
+            await api.post('/api/pagamento', {
               plano_id: planoSelecionado.value === 'plus' ? 2 : 1,
               metodo: 'credit_card',
               token: cardData.token,
-              parcelas: 1
+                parcelas: 1,
+                periodo: periodo.value
             })
-            alert('Pagamento enviado. Aguarde confirmação por e-mail.')
+            alert('Pagamento enviado. Aguarde confirmação.')
           } catch (err) {
             console.error('Erro no processamento do pagamento:', err)
             alert('Erro ao processar pagamento.')
@@ -378,8 +371,7 @@ async function initPixBrick(qrCodeBase64?: string) {
     brickController.value = null
   }
 
-  if (pixBrickController.value) return
-
+  // Apenas renderiza o QR Code recebido do backend. Não criar Wallet Brick no front.
   if (qrCodeBase64) {
     const pixContainer = document.getElementById('pixPaymentBrick')
     if (pixContainer) {
@@ -388,44 +380,31 @@ async function initPixBrick(qrCodeBase64?: string) {
     return
   }
 
-  await nextTick()
-
-  try {
-    const MpConstructor = (window as any).MercadoPago
-    if (!MpConstructor) {
-      console.warn('MercadoPago SDK não disponível')
-      return
-    }
-
-    const mp = new MpConstructor(publicKey, { locale: 'pt-BR' })
-    const bricks = mp.bricks()
-
-    pixBrickController.value = await bricks.create('wallet', 'pixPaymentBrick', {
-      initialization: {},
-      customization: {
-        visual: { style: { theme: 'dark' } }
-      },
-      callbacks: {
-        onReady: () => {
-          console.log('PIX Wallet Brick pronto ✔')
-        },
-        onError: (err: any) => {
-          console.error('Erro no PIX Brick:', err)
-        },
-      },
-    })
-  } catch (err) {
-    console.error('Erro ao criar Wallet Brick:', err)
-    alert('Erro ao carregar PIX. Tente novamente.')
-  }
+  // Se não houver QR base64, não tentamos criar nenhum Brick (o backend deve fornecer o QR).
+  console.error('QR code PIX não fornecido pelo backend')
 }
 
+// Reage a mudanças no método e no valor para (re)criar/desmontar bricks
 watch(
-  () => [loading.value, formaPagamento.value, preco.value],
-  async ([isLoading, metodo]) => {
-    if (isLoading) return
+  () => formaPagamento.value,
+  async (metodo, _old) => {
+    if (loading.value) return
 
     await loadMercadoPagoSdk()
+
+    // desmonta ambos antes de criar o necessário
+    if (brickController.value) {
+      try {
+        await brickController.value.unmount()
+      } catch (err) {
+        console.warn('Erro ao desmontar Card Brick:', err)
+      }
+      brickController.value = null
+    }
+
+    // limpa o conteúdo do PIX (se houver)
+    const pixContainer = document.getElementById('pixPaymentBrick')
+    if (pixContainer) pixContainer.innerHTML = ''
 
     if (metodo === 'cartao') {
       await initCardBrick()
@@ -433,6 +412,36 @@ watch(
   },
   { immediate: true }
 )
+
+// Reage a mudanças no preço: recriar Card Brick se necessário
+watch(
+  () => preco.value,
+  async (novo, _old) => {
+    if (loading.value) return
+    if (formaPagamento.value !== 'cartao') return
+    // força recriação do card brick para atualizar o amount
+    if (brickController.value) {
+      try {
+        await brickController.value.unmount()
+      } catch (err) {
+        console.warn('Erro ao desmontar Card Brick para atualização:', err)
+      }
+      brickController.value = null
+    }
+    await loadMercadoPagoSdk()
+    await initCardBrick()
+  }
+)
+
+onBeforeUnmount(async () => {
+  if (brickController.value) {
+    try { await brickController.value.unmount() } catch (e) {}
+    brickController.value = null
+  }
+  // Limpa container PIX (não usamos pixBrickController)
+  const pixContainer = document.getElementById('pixPaymentBrick')
+  if (pixContainer) pixContainer.innerHTML = ''
+})
 </script>
 
 
