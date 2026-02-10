@@ -51,56 +51,60 @@
               <button :class="['forma', { ativo: formaPagamento === 'pix' }]" @click="formaPagamento = 'pix'">
                 🔲 PIX
               </button>
-              <button :class="['forma', { ativo: formaPagamento === 'boleto' }]" @click="formaPagamento = 'boleto'">
-                🧾 Boleto
-              </button>
             </div>
 
             <div class="conteudo-pagamento">
-              <form v-if="formaPagamento === 'cartao'" class="formulario">
+              <form v-show="formaPagamento === 'cartao'" class="formulario">
                 <label>Pagamento com Cartão</label>
                 <div id="cardPaymentBrick" style="margin-top:12px;"></div>
                 <div style="margin-top:12px; text-align:right; color:var(--color-primary); font-weight:800;">Valor: {{ precoFormatado }}</div>
               </form>
 
               <div v-if="formaPagamento === 'pix'" class="area-pix">
-                <p class="caixa-aviso">
-                  Pagamento via PIX é confirmado em até 2 minutos.
-                </p>
+                <div v-if="!pixGerado" class="formulario-pix">
+                  <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input 
+                      v-model="dadosPix.nome" 
+                      type="text" 
+                      placeholder="Seu nome completo"
+                    />
+                  </div>
 
-                <div class="codigo-pix">
-                  <input readonly :value="codigoPix" />
-                  <button @click="copiarPix">Copiar</button>
+                  <div class="form-group">
+                    <label>CPF</label>
+                    <input 
+                      v-model="dadosPix.cpf" 
+                      type="text" 
+                      placeholder="000.000.000-00"
+                      @input="formatarCPF"
+                    />
+                  </div>
+
+                  <button 
+                    type="button"
+                    class="botao-gerar-pix"
+                    @click="gerarPixQrCode"
+                    :disabled="!dadosPix.nome || !dadosPix.cpf"
+                  >
+                    Gerar QR Code PIX
+                  </button>
                 </div>
 
-                <button class="primary outline" @click="confirmarPix">
-                  Já fiz o pagamento
-                </button>
+                
+                <div v-if="pixGerado" class="qr-code-container">
+                  <div id="pixPaymentBrick" style="margin-top:12px;"></div>
+                  <div style="margin-top:12px; text-align:right; color:var(--color-primary); font-weight:800;">Valor: {{ precoFormatado }}</div>
+                  
+                  <button 
+                    type="button"
+                    class="botao-voltar"
+                    @click="voltarFormularioPix"
+                  >
+                    ← Voltar
+                  </button>
+                </div>
               </div>
-
-              <form v-if="formaPagamento === 'boleto'" class="formulario">
-                <label>Nome Completo</label>
-                <input />
-
-                <label>CPF</label>
-                <input />
-
-                <label>Email</label>
-                <input />
-
-                <div class="info-boleto">
-                  <div class="linha-info">
-                    <div>Valor</div>
-                    <div class="destaque">{{ precoFormatado }}</div>
-                  </div>
-                  <div class="linha-info">
-                    <div>Vencimento</div>
-                    <div>{{ vencimentoBoleto }}</div>
-                  </div>
-                </div>
-
-                <button class="primary">Gerar Boleto</button>
-              </form>
             </div>
           </section>
         </main>
@@ -141,7 +145,7 @@
 
 <script setup lang="ts">
 import api from '@/controller/api'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 
@@ -164,7 +168,14 @@ const precos = ref<Precos>({
 })
 
 const periodo = ref<'mensal' | 'anual'>('mensal')
-const formaPagamento = ref<'cartao' | 'pix' | 'boleto'>('cartao')
+const formaPagamento = ref<'cartao' | 'pix'>('cartao')
+
+const mostraFormularioPix = ref(false)
+const dadosPix = ref({
+  nome: '',
+  cpf: ''
+})
+const pixGerado = ref(false)
 
 const preco = computed(() => {
   return precos.value[planoSelecionado.value][periodo.value]
@@ -183,27 +194,65 @@ const nomePlano = computed(() =>
   planoSelecionado.value === 'plus' ? 'Plano Plus' : 'Plano Básico'
 )
 
-const codigoPix = ref('00020126PIXCODEFAKE')
-
-function copiarPix() {
-  navigator.clipboard?.writeText(codigoPix.value)
-}
-
-function confirmarPix() {
-  alert('Pagamento PIX confirmado (simulação)')
-}
-
-const vencimentoBoleto = computed(() => {
-  const data = new Date()
-  data.setDate(data.getDate() + 2)
-  return data.toLocaleDateString('pt-BR')
-})
-
 function formatar(valor: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
   }).format(valor)
+}
+
+function formatarCPF(event: Event) {
+  const input = event.target as HTMLInputElement
+  let value = input.value.replace(/\D/g, '')
+  
+  if (value.length <= 11) {
+    value = value.replace(/(\d{3})(\d)/, '$1.$2')
+    value = value.replace(/(\d{3})(\d)/, '$1.$2')
+    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  }
+  
+  dadosPix.value.cpf = value
+}
+
+async function gerarPixQrCode() {
+  if (!dadosPix.value.nome || !dadosPix.value.cpf) {
+    alert('Preencha todos os campos')
+    return
+  }
+
+  loading.value = true
+  
+  try {
+    const { data } = await api.post('/pagamento', {
+      plano_id: planoSelecionado.value === 'plus' ? 2 : 1,
+      metodo: 'pix'
+    })
+
+    pixGerado.value = true
+    
+    await nextTick()
+    
+    await initPixBrick(data.pix?.qr_code_base64)
+  } catch (err) {
+    console.error('Erro ao gerar PIX:', err)
+    alert('Erro ao gerar QR Code. Tente novamente.')
+  } finally {
+    loading.value = false
+  }
+}
+
+function voltarFormularioPix() {
+  pixGerado.value = false
+  dadosPix.value = { nome: '', cpf: '' }
+  
+  if (pixBrickController.value) {
+    try {
+      pixBrickController.value.unmount()
+    } catch (err) {
+      console.log('Erro ao desmontar PIX Brick:', err)
+    }
+    pixBrickController.value = null
+  }
 }
 
 onMounted(async () => {
@@ -225,83 +274,165 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+  loadMercadoPagoSdk()
 })
 
-// Mercado Pago Brick integration
 const brickController = ref<any>(null)
+const pixBrickController = ref<any>(null)
+const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
 
-async function initMercadoPago() {
+async function loadMercadoPagoSdk() {
+  if ((window as any).MercadoPago) {
+    return Promise.resolve()
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://sdk.mercadopago.com/js/v2'
+    script.async = true
+    script.onload = () => {
+      const check = () => {
+        if ((window as any).MercadoPago) return resolve()
+        setTimeout(() => {
+          if ((window as any).MercadoPago) return resolve()
+          resolve()
+        }, 50)
+      }
+      check()
+    }
+    script.onerror = (err) => reject(new Error('Erro ao carregar SDK MercadoPago'))
+    document.body.appendChild(script)
+  })
+}
+
+async function initCardBrick() {
+  if (pixBrickController.value) {
+    try {
+      await pixBrickController.value.unmount()
+    } catch (err) {
+      console.log('Erro ao desmontar PIX Brick:', err)
+    }
+    pixBrickController.value = null
+  }
+
+  if (brickController.value) return
+
+  await nextTick()
+
   try {
-    const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
     const MpConstructor = (window as any).MercadoPago
-    const mp = MpConstructor ? new MpConstructor(publicKey, { locale: 'pt-BR' }) : null
-
-    if (!mp) {
-      console.warn('MercadoPago SDK não disponível no window')
+    if (!MpConstructor) {
+      console.warn('MercadoPago SDK não disponível')
       return
     }
 
+    const mp = new MpConstructor(publicKey, { locale: 'pt-BR' })
     const bricks = mp.bricks()
-    // garante um valor mínimo para visualização do Brick
-    const amount = Math.max(1, Number((preco.value || 0).toFixed(2)))
+    const amount = Math.max(1, Number(preco.value.toFixed(2)))
 
-    bricks
-      .create('cardPayment', 'cardPaymentBrick', {
-        initialization: { amount },
-        customization: {
-          visual: { style: { theme: 'dark' } },
-          paymentButton: { text: 'Pagar agora' },
+    brickController.value = await bricks.create('cardPayment', 'cardPaymentBrick', {
+      initialization: { amount },
+      customization: {
+        visual: { style: { theme: 'dark' } },
+        paymentButton: { text: 'Pagar agora' },
+      },
+      callbacks: {
+        onReady: () => {
+          console.log('Card Brick pronto ✔')
         },
-        callbacks: {
-          onReady: () => console.log('Brick montado ✔ - amount:', amount),
-          onSubmit: async (cardData: any) => {
-            try {
-              console.log('Dados recebidos do Brick:', cardData)
-              loading.value = true
-              // enviar token ao backend para processar o pagamento
-              await api.post('/pagamento', {
-                metodo: 'credit_card',
-                tokenCartao: cardData.token,
-                valor: amount,
-              })
-              alert('Pagamento enviado. Aguarde confirmação por e-mail.')
-            } catch (err) {
-              console.error('Erro no processamento do pagamento:', err)
-              alert('Erro ao processar pagamento.')
-            } finally {
-              loading.value = false
-            }
-          },
-          onError: (err: any) => {
-            console.error('Erro no Brick:', err)
-            alert('Erro no Brick do Mercado Pago.')
-          },
+        onSubmit: async (cardData: any) => {
+          try {
+            loading.value = true
+            await api.post('/pagamento', {
+              plano_id: planoSelecionado.value === 'plus' ? 2 : 1,
+              metodo: 'credit_card',
+              token: cardData.token,
+              parcelas: 1
+            })
+            alert('Pagamento enviado. Aguarde confirmação por e-mail.')
+          } catch (err) {
+            console.error('Erro no processamento do pagamento:', err)
+            alert('Erro ao processar pagamento.')
+          } finally {
+            loading.value = false
+          }
         },
-      })
-      .then((controller: any) => (brickController.value = controller))
+        onError: (err: any) => {
+          console.error('Erro no Card Brick:', err)
+        },
+      },
+    })
   } catch (err) {
-    console.error('initMercadoPago erro:', err)
+    console.error('Erro ao criar Card Brick:', err)
   }
 }
 
-function loadMercadoPagoSdk() {
-  if ((window as any).MercadoPago) {
-    initMercadoPago()
+async function initPixBrick(qrCodeBase64?: string) {
+  if (brickController.value) {
+    try {
+      await brickController.value.unmount()
+    } catch (err) {
+      console.log('Erro ao desmontar Card Brick:', err)
+    }
+    brickController.value = null
+  }
+
+  if (pixBrickController.value) return
+
+  if (qrCodeBase64) {
+    const pixContainer = document.getElementById('pixPaymentBrick')
+    if (pixContainer) {
+      pixContainer.innerHTML = `<img src="data:image/png;base64,${qrCodeBase64}" style="max-width: 300px; margin: 0 auto; display: block;" />`
+    }
     return
   }
 
-  const script = document.createElement('script')
-  script.src = 'https://sdk.mercadopago.com/js/v2'
-  script.onload = () => initMercadoPago()
-  document.body.appendChild(script)
+  await nextTick()
+
+  try {
+    const MpConstructor = (window as any).MercadoPago
+    if (!MpConstructor) {
+      console.warn('MercadoPago SDK não disponível')
+      return
+    }
+
+    const mp = new MpConstructor(publicKey, { locale: 'pt-BR' })
+    const bricks = mp.bricks()
+
+    pixBrickController.value = await bricks.create('wallet', 'pixPaymentBrick', {
+      initialization: {},
+      customization: {
+        visual: { style: { theme: 'dark' } }
+      },
+      callbacks: {
+        onReady: () => {
+          console.log('PIX Wallet Brick pronto ✔')
+        },
+        onError: (err: any) => {
+          console.error('Erro no PIX Brick:', err)
+        },
+      },
+    })
+  } catch (err) {
+    console.error('Erro ao criar Wallet Brick:', err)
+    alert('Erro ao carregar PIX. Tente novamente.')
+  }
 }
 
-watch(formaPagamento, (val) => {
-  if (val === 'cartao') loadMercadoPagoSdk()
-})
+watch(
+  () => [loading.value, formaPagamento.value, preco.value],
+  async ([isLoading, metodo]) => {
+    if (isLoading) return
 
-// se iniciar já em cartão, carrega SDK
-if (formaPagamento.value === 'cartao') loadMercadoPagoSdk()
+    await loadMercadoPagoSdk()
+
+    if (metodo === 'cartao') {
+      await initCardBrick()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 
@@ -517,6 +648,128 @@ if (formaPagamento.value === 'cartao') loadMercadoPagoSdk()
   margin-top: 12px;
 }
 
+  .formulario-pix {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px; 
+    border-radius: 20px; 
+    border: 1px solid var(--color-border);
+    background: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.6);
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
+    font-size: 14px;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: #3498db;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+  }
+
+  .form-group input::placeholder {
+    color: rgba(160, 174, 192, 0.5);
+    font-weight: 400;
+  }
+
+  .botao-gerar-pix {
+    width: 100%;
+    padding: 12px;
+    border-radius: 28px;
+    border: none;
+    font-weight: 800;
+    font-size: 15px;
+    color: #000000;
+    cursor: pointer;
+    background-color: rgb(33, 253, 253);
+    transition: all 0.18s ease;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  .botao-gerar-pix::before {
+    display: inline-block;
+    transform: translateY(0);
+  }
+
+  .botao-gerar-pix:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    opacity: 0.98;
+  }
+
+  .botao-gerar-pix:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .botao-gerar-pix:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+.qr-code-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(20, 20, 40, 0.8), rgba(30, 35, 60, 0.8));
+  border-radius: 16px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.botao-voltar {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 2px solid rgba(52, 152, 219, 0.25);
+  background: rgba(15, 23, 42, 0.4);
+  color: #3498db;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  letter-spacing: 0.3px;
+}
+
+.botao-voltar:hover {
+  border-color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+  color: #5dade2;
+}
+
 .caixa-aviso {
   padding: 12px;
   border-radius: 10px;
@@ -603,8 +856,14 @@ if (formaPagamento.value === 'cartao') loadMercadoPagoSdk()
   margin-top: 18px;
 }
 
-/* Estilos para o container do Mercado Pago Brick */
 #cardPaymentBrick {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+#pixPaymentBrick {
   padding: 14px;
   border-radius: 12px;
   background: rgba(0,0,0,0.45);
