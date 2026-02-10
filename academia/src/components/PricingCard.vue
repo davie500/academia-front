@@ -63,7 +63,7 @@
       :class="['pricing-card__button', { 'pricing-card__button--orange': isPremium }]"
       @click="assinarPlano"
     >
-      assinar
+      Assinar
     </button>
   </div>
 </template>

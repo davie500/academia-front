@@ -299,14 +299,14 @@ export default {
 }
 .login-container {
   position: relative;
-  min-height: 50vh;
+  min-height: 100vh;
   background-size: cover;
   background-position: center;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   color: #fff;
-  padding-top: 37px;
+  padding: 20px;
   font-family: Arial, Helvetica, sans-serif;
 }
 .login-container::before {
@@ -320,6 +320,17 @@ export default {
   letter-spacing: 4px;
   z-index: 0;
   pointer-events: none;
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .login-container {
+    min-height: 100vh;
+  }
+  
+  .login-container::before {
+    display: block;
+  }
 }
 .overlay {
   position: absolute;

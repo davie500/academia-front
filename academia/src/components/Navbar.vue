@@ -13,7 +13,7 @@
       <div class="navbar-start">
         <router-link class="navbar-item" :to="{ name: 'Notas'}">ANOTAÇÕES</router-link>
         <router-link class="navbar-item" :to="{ name: 'Treinos'}">TREINOS</router-link>
-        <a class="navbar-item" href="#">PERFIL</a>
+        <router-link class="navbar-item" :to="{ name: 'Perfil'}">PERFIL</router-link>
       </div>
 
       <div class="navbar-end">
