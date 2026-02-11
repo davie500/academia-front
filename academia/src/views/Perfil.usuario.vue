@@ -100,6 +100,7 @@ const loadprofile = async () =>{
     
     const data = res.data;
     
+    
     user.name = data.nome;
     user.email = data.email;
 
