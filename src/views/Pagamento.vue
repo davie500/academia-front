@@ -149,37 +149,56 @@ import { ref, computed, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 
+
 const route = useRoute()
 const loading = ref(false)
 
 type Plano = 'basico' | 'plus'
 type Periodo = 'mensal' | 'anual'
 
-type Precos = Record<Plano, Record<Periodo, number>>
+type PlanoInfo = {
+  preco: number
+  plano_id: number
+  periodo_id: number
+}
 
-const planoSelecionado = computed<'basico' | 'plus'>(() => {
+type Precos = Record<Plano, Record<Periodo, PlanoInfo>>
+
+const planoSelecionado = computed<Plano>(() => {
   const plano = String(route.query.plano || '').toLowerCase()
   return plano.includes('plus') ? 'plus' : 'basico'
 })
 
 const precos = ref<Precos>({
-  basico: { mensal: 0, anual: 0 },
-  plus: { mensal: 0, anual: 0 }
+  basico: {
+    mensal: { preco: 0, plano_id: 0, periodo_id: 0 },
+    anual: { preco: 0, plano_id: 0, periodo_id: 0 }
+  },
+  plus: {
+    mensal: { preco: 0, plano_id: 0, periodo_id: 0 },
+    anual: { preco: 0, plano_id: 0, periodo_id: 0 }
+  }
 })
 
-const periodo = ref<'mensal' | 'anual'>('mensal')
+const periodo = ref<Periodo>('mensal')
 const formaPagamento = ref<'cartao' | 'pix'>('cartao')
 
-const mostraFormularioPix = ref(false)
 const dadosPix = ref({
   nome: '',
   cpf: ''
 })
+
 const pixGerado = ref(false)
 
-const preco = computed(() => {
-  return precos.value[planoSelecionado.value][periodo.value]
-})
+/* =============================
+   COMPUTEDS
+============================= */
+
+const planoAtual = computed(() =>
+  precos.value[planoSelecionado.value][periodo.value]
+)
+
+const preco = computed(() => planoAtual.value.preco)
 
 const precoFormatado = computed(() =>
   new Intl.NumberFormat('pt-BR', {
@@ -188,11 +207,17 @@ const precoFormatado = computed(() =>
   }).format(preco.value)
 )
 
-const nomePeriodo = computed(() => (periodo.value === 'mensal' ? 'Mensal' : 'Anual'))
+const nomePeriodo = computed(() =>
+  periodo.value === 'mensal' ? 'Mensal' : 'Anual'
+)
 
 const nomePlano = computed(() =>
   planoSelecionado.value === 'plus' ? 'Plano Plus' : 'Plano Básico'
 )
+
+/* =============================
+   FORMATADORES
+============================= */
 
 function formatar(valor: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -204,54 +229,176 @@ function formatar(valor: number) {
 function formatarCPF(event: Event) {
   const input = event.target as HTMLInputElement
   let value = input.value.replace(/\D/g, '')
-  
+
   if (value.length <= 11) {
     value = value.replace(/(\d{3})(\d)/, '$1.$2')
     value = value.replace(/(\d{3})(\d)/, '$1.$2')
     value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
   }
-  
+
   dadosPix.value.cpf = value
 }
 
-async function gerarPixQrCode() {
-  if (!dadosPix.value.nome || !dadosPix.value.cpf) {
-    alert('Preencha todos os campos')
-    return
-  }
+/* =============================
+   MERCADO PAGO
+============================= */
 
-  loading.value = true
-  
-    try {
-    const { data } = await api.post('/api/pagamento', {
-      plano_id: planoSelecionado.value === 'plus' ? 2 : 1,
+const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
+const brickController = ref<any>(null)
+
+async function loadMercadoPagoSdk() {
+  if ((window as any).MercadoPago) return
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://sdk.mercadopago.com/js/v2'
+    script.onload = () => resolve()
+    script.onerror = () => reject()
+    document.body.appendChild(script)
+  })
+}
+
+async function initCardBrick() {
+  if (!preco.value || preco.value <= 0) return
+
+  await nextTick()
+
+  const Mp = (window as any).MercadoPago
+  if (!Mp) return
+
+  const mp = new Mp(publicKey, { locale: 'pt-BR' })
+  const bricks = mp.bricks()
+
+  brickController.value = await bricks.create(
+    'cardPayment',
+    'cardPaymentBrick',
+    {
+      initialization: {
+        amount: Number(preco.value.toFixed(2))
+      },
+      customization: {
+        visual: {
+          style: { theme: 'dark' }
+        },
+        paymentButton: {
+          text: 'Pagar agora'
+        }
+      },
+      callbacks: {
+        onReady: () => console.log('Card Brick pronto ✔'),
+
+        onSubmit: async (cardData: any) => {
+          try {
+            loading.value = true
+
+            await api.post('/api/pagamentos', {
+              plano_id: planoAtual.value.plano_id,
+              periodo_id: planoAtual.value.periodo_id,
+              metodo: 'credit_card',
+              token: cardData.token,
+              parcelas: 1
+            })
+
+            alert('Pagamento enviado com sucesso!')
+          } catch (err) {
+            console.error(err)
+            alert('Erro ao processar pagamento')
+          } finally {
+            loading.value = false
+          }
+        },
+
+        onError: (error: any) => console.error(error)
+      }
+    }
+  )
+}
+
+/* =============================
+   PIX
+============================= */
+
+async function gerarPixQrCode() {
+  try {
+    const { data } = await api.post('/api/pagamentos', {
+      plano_id: planoAtual.value.plano_id,
+      periodo_id: planoAtual.value.periodo_id,
       metodo: 'pix',
-      nome: dadosPix.value.nome,
-      cpf: dadosPix.value.cpf,
-      periodo: periodo.value
+      first_name: dadosPix.value.nome,
+      last_name: dadosPix.value.nome,
+      cpf: dadosPix.value.cpf.replace(/\D/g, '')
+    },
+    {
+      headers: {
+        Authorization: `Bearer 22|UjxScCJl18Rmb4Np2z79YHRN1oZE377TrI04eDdK5924153e`
+      }
     })
 
+    console.log("RETORNO BACKEND:", data)
+
     pixGerado.value = true
-    
+
     await nextTick()
-    
-    // Exibe QR Code retornado pelo backend (base64)
-    await initPixBrick(data.pix?.qr_code_base64)
-  } catch (err) {
-    console.error('Erro ao gerar PIX:', err)
-    alert('Erro ao gerar QR Code. Tente novamente.')
-  } finally {
-    loading.value = false
+
+    const container = document.getElementById('pixPaymentBrick')
+
+    if (container && data.pix?.qr_code_base64) {
+      container.innerHTML = ''
+
+      const img = document.createElement('img')
+      img.src = `data:image/png;base64,${data.pix.qr_code_base64}`
+      img.style.maxWidth = '300px'
+      img.style.display = 'block'
+      img.style.margin = '20px auto'
+
+      container.appendChild(img)
+    } else {
+      console.error('QR Code não encontrado ou container inexistente')
+    }
+
+  } catch (error) {
+    console.error("Erro ao gerar PIX:", error)
   }
 }
 
 function voltarFormularioPix() {
   pixGerado.value = false
   dadosPix.value = { nome: '', cpf: '' }
-  // Limpa o container do PIX (renderizamos apenas a imagem base64 retornada pelo backend)
-  const pixContainer = document.getElementById('pixPaymentBrick')
-  if (pixContainer) pixContainer.innerHTML = ''
+
+  const container = document.getElementById('pixPaymentBrick')
+  if (container) container.innerHTML = ''
 }
+
+/* =============================
+   WATCHERS
+============================= */
+
+watch(formaPagamento, async (metodo) => {
+  if (brickController.value) {
+    await brickController.value.unmount()
+    brickController.value = null
+  }
+
+  if (metodo === 'cartao') {
+    await loadMercadoPagoSdk()
+    await initCardBrick()
+  }
+})
+
+watch(preco, async () => {
+  if (formaPagamento.value !== 'cartao') return
+
+  if (brickController.value) {
+    await brickController.value.unmount()
+    brickController.value = null
+  }
+
+  await initCardBrick()
+})
+
+/* =============================
+   INIT
+============================= */
 
 onMounted(async () => {
   loading.value = true
@@ -260,189 +407,34 @@ onMounted(async () => {
     const { data } = await api.get('/api/planoPeriodo')
 
     data.forEach((item: any) => {
-      const nomePlano = item.plano.nome.toLowerCase() as 'basico' | 'plus'
-
-      const periodo =
+      const nomePlano = item.plano.nome.toLowerCase() as Plano
+      const nomePeriodo =
         item.periodo.nome === 'Mensal' ? 'mensal' : 'anual'
 
-      precos.value[nomePlano][periodo] = Number(item.preco.valor)
+      precos.value[nomePlano][nomePeriodo] = {
+        preco: Number(item.preco.valor),
+        plano_id: item.plano.id,
+        periodo_id: item.periodo.id
+      }
     })
-  } catch (error) {
-    console.error('Erro ao carregar planos', error)
+  } catch (err) {
+    console.error(err)
   } finally {
     loading.value = false
   }
 
-  loadMercadoPagoSdk()
+  await loadMercadoPagoSdk()
+  await initCardBrick()
 })
-
-const brickController = ref<any>(null)
-const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
-
-async function loadMercadoPagoSdk() {
-  if ((window as any).MercadoPago) {
-    return Promise.resolve()
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    script.src = 'https://sdk.mercadopago.com/js/v2'
-    script.async = true
-    script.onload = () => {
-      const check = () => {
-        if ((window as any).MercadoPago) return resolve()
-        setTimeout(() => {
-          if ((window as any).MercadoPago) return resolve()
-          resolve()
-        }, 50)
-      }
-      check()
-    }
-    script.onerror = (err) => reject(new Error('Erro ao carregar SDK MercadoPago'))
-    document.body.appendChild(script)
-  })
-}
-
-async function initCardBrick() {
-  // Limpa conteúdo de PIX caso exista (renderizamos apenas a imagem base64)
-  const pixContainer = document.getElementById('pixPaymentBrick')
-  if (pixContainer) pixContainer.innerHTML = ''
-
-  if (brickController.value) return
-
-  await nextTick()
-
-    try {
-    const MpConstructor = (window as any).MercadoPago
-    if (!MpConstructor) {
-      console.warn('MercadoPago SDK não disponível')
-      return
-    }
-
-    const mp = new MpConstructor(publicKey, { locale: 'pt-BR' })
-    const bricks = mp.bricks()
-    const amount = Math.max(1, Number(preco.value.toFixed(2)))
-
-    brickController.value = await bricks.create('cardPayment', 'cardPaymentBrick', {
-      initialization: { amount },
-      customization: {
-        visual: { style: { theme: 'dark' } },
-        paymentButton: { text: 'Pagar agora' },
-      },
-      callbacks: {
-        onReady: () => {
-          console.log('Card Brick pronto ✔')
-        },
-        onSubmit: async (cardData: any) => {
-          try {
-            loading.value = true
-            await api.post('/api/pagamento', {
-              plano_id: planoSelecionado.value === 'plus' ? 2 : 1,
-              metodo: 'credit_card',
-              token: cardData.token,
-                parcelas: 1,
-                periodo: periodo.value
-            })
-            alert('Pagamento enviado. Aguarde confirmação.')
-          } catch (err) {
-            console.error('Erro no processamento do pagamento:', err)
-            alert('Erro ao processar pagamento.')
-          } finally {
-            loading.value = false
-          }
-        },
-        onError: (err: any) => {
-          console.error('Erro no Card Brick:', err)
-        },
-      },
-    })
-  } catch (err) {
-    console.error('Erro ao criar Card Brick:', err)
-  }
-}
-
-async function initPixBrick(qrCodeBase64?: string) {
-  if (brickController.value) {
-    try {
-      await brickController.value.unmount()
-    } catch (err) {
-      console.log('Erro ao desmontar Card Brick:', err)
-    }
-    brickController.value = null
-  }
-
-  // Apenas renderiza o QR Code recebido do backend. Não criar Wallet Brick no front.
-  if (qrCodeBase64) {
-    const pixContainer = document.getElementById('pixPaymentBrick')
-    if (pixContainer) {
-      pixContainer.innerHTML = `<img src="data:image/png;base64,${qrCodeBase64}" style="max-width: 300px; margin: 0 auto; display: block;" />`
-    }
-    return
-  }
-
-  // Se não houver QR base64, não tentamos criar nenhum Brick (o backend deve fornecer o QR).
-  console.error('QR code PIX não fornecido pelo backend')
-}
-
-// Reage a mudanças no método e no valor para (re)criar/desmontar bricks
-watch(
-  () => formaPagamento.value,
-  async (metodo, _old) => {
-    if (loading.value) return
-
-    await loadMercadoPagoSdk()
-
-    // desmonta ambos antes de criar o necessário
-    if (brickController.value) {
-      try {
-        await brickController.value.unmount()
-      } catch (err) {
-        console.warn('Erro ao desmontar Card Brick:', err)
-      }
-      brickController.value = null
-    }
-
-    // limpa o conteúdo do PIX (se houver)
-    const pixContainer = document.getElementById('pixPaymentBrick')
-    if (pixContainer) pixContainer.innerHTML = ''
-
-    if (metodo === 'cartao') {
-      await initCardBrick()
-    }
-  },
-  { immediate: true }
-)
-
-// Reage a mudanças no preço: recriar Card Brick se necessário
-watch(
-  () => preco.value,
-  async (novo, _old) => {
-    if (loading.value) return
-    if (formaPagamento.value !== 'cartao') return
-    // força recriação do card brick para atualizar o amount
-    if (brickController.value) {
-      try {
-        await brickController.value.unmount()
-      } catch (err) {
-        console.warn('Erro ao desmontar Card Brick para atualização:', err)
-      }
-      brickController.value = null
-    }
-    await loadMercadoPagoSdk()
-    await initCardBrick()
-  }
-)
 
 onBeforeUnmount(async () => {
   if (brickController.value) {
-    try { await brickController.value.unmount() } catch (e) {}
-    brickController.value = null
+    await brickController.value.unmount()
   }
-  // Limpa container PIX (não usamos pixBrickController)
-  const pixContainer = document.getElementById('pixPaymentBrick')
-  if (pixContainer) pixContainer.innerHTML = ''
 })
 </script>
+
+
 
 
 
@@ -904,4 +896,3 @@ onBeforeUnmount(async () => {
 }
 
 </style>
-
