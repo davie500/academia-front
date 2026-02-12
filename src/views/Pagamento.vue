@@ -330,7 +330,7 @@ async function gerarPixQrCode() {
     },
     {
       headers: {
-        Authorization: `Bearer 22|UjxScCJl18Rmb4Np2z79YHRN1oZE377TrI04eDdK5924153e`
+        Authorization: `Bearer 24|4K4w2XZgYXX1bw264YxtL2x1ucyc4mldKcP5Xwrf14308d5f`
       }
     })
 
