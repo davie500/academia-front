@@ -37,17 +37,44 @@
           <label for="password">Senha</label>
           <div class="input-with-icon">
             <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V8a6 6 0 0112 0v2" stroke="#ff7a3a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="10" width="16" height="10" rx="2" stroke="#0b151a" stroke-width="1.5"/></svg>
-            <input id="password" v-model="password" type="password" placeholder="••••••••" required />
+            <input
+              id="password"
+              v-model="password"
+              type="password"
+              placeholder="••••••••"
+              @input="onPasswordInput"
+              @focus="onPasswordFocus"
+              @blur="onPasswordBlur"
+              :aria-invalid="!isPasswordValid"
+              aria-describedby="password-requirements"
+              required
+            />
             <button type="button" class="eye" aria-label="Mostrar senha">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" opacity="0.15"/></svg>
             </button>
           </div>
+          <ul
+            id="password-requirements"
+            class="password-requirements"
+            role="status"
+            aria-live="polite"
+            v-show="showUnmetRequirements"
+          >
+            <li v-if="!validations.minLength" class="unmet">Mínimo de 8 caracteres</li>
+            <li v-if="!validations.specialChar" class="unmet">Pelo menos 1 caractere especial</li>
+            <li v-if="!validations.number" class="unmet">Pelo menos 1 número</li>
+            <li v-if="!validations.upper" class="unmet">Pelo menos 1 letra maiúscula</li>
+            <li v-if="!validations.lower" class="unmet">Pelo menos 1 letra minúscula</li>
+          </ul>
         </div>
         <div class="field">
           <label for="confirmPassword">Confirmar Senha</label>
           <div class="input-with-icon">
             <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V8a6 6 0 0112 0v2" stroke="#ff7a3a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="10" width="16" height="10" rx="2" stroke="#0b151a" stroke-width="1.5"/></svg>
-            <input id="confirmPassword" v-model="confirmPassword" type="password" placeholder="Repita a senha" required />
+            <input id="confirmPassword" v-model="confirmPassword" @input="onConfirmInput" type="password" placeholder="Repita a senha" required aria-describedby="confirm-status" />
+          </div>
+          <div id="confirm-status" class="confirm-status" aria-live="polite" v-if="touchedConfirm && !passwordsMatch">
+            Senhas não coincidem
           </div>
         </div>
         <div class="terms-row">
@@ -96,7 +123,7 @@
             </div>
           </div>
         </div>
-        <button type="submit" class="login-button" :disabled="!acceptedTerms">CADASTRAR</button>
+        <button type="submit" class="login-button" :disabled="!acceptedTerms || !isPasswordValid">CADASTRAR</button>
       </form>
       <div class="login-footer">
         <p>
@@ -104,7 +131,6 @@
           <router-link :to="{ name: 'Login' }">Entrar</router-link>
         </p>
         <br>
-        <router-link :to="{ name: 'Dashboard' }" class="back-button">Página inicial</router-link>
       </div>
     </div>
   </div>
@@ -121,9 +147,33 @@ export default {
       email: '',
       password: '',
       confirmPassword: '',
+      // password validation state
+      validations: {
+        minLength: false,
+        specialChar: false,
+        number: false,
+        upper: false,
+        lower: false
+      },
+      isPasswordValid: false,
+      isFocusedPassword: false,
+      touchedPassword: false,
+      touchedConfirm: false,
       showTermsModal: false,
       acceptedTerms: false,
       toasts: []
+    }
+  },
+  computed: {
+    showUnmetRequirements() {
+      return (this.isFocusedPassword || this.touchedPassword || (this.password && this.password.length > 0)) && !this.isPasswordValid
+    },
+    showPasswordError() {
+      return (!this.isPasswordValid) && (this.touchedPassword || this.isFocusedPassword)
+    }
+    ,
+    passwordsMatch() {
+      return this.password && this.confirmPassword === this.password
     }
   },
   methods: {
@@ -158,6 +208,11 @@ export default {
       if (!this.acceptedTerms) {
         this.showToast('Você precisa aceitar os Termos de Uso', 'error')
         this.openTerms()
+        return
+      }
+
+      if (!this.isPasswordValid) {
+        this.showToast('A senha não atende aos requisitos de segurança', 'error')
         return
       }
 
@@ -210,6 +265,35 @@ export default {
       this.acceptedTerms = true
       this.showTermsModal = false
     }
+    ,
+    onPasswordInput() {
+      this.touchedPassword = true
+      this.validatePassword(this.password)
+    },
+    onPasswordFocus() {
+      this.isFocusedPassword = true
+      // start validating immediately when focused
+      this.validatePassword(this.password)
+    },
+    onPasswordBlur() {
+      this.isFocusedPassword = false
+      this.touchedPassword = true
+      this.validatePassword(this.password)
+    },
+    onConfirmInput() {
+      this.touchedConfirm = true
+      // no extra validation needed here; computed `passwordsMatch` reflects current state
+    },
+    validatePassword(value) {
+      const v = value || ''
+      this.validations.minLength = v.length >= 8
+      this.validations.specialChar = /[^A-Za-z0-9]/.test(v)
+      this.validations.number = /\d/.test(v)
+      this.validations.upper = /[A-Z]/.test(v)
+      this.validations.lower = /[a-z]/.test(v)
+      this.isPasswordValid = this.validations.minLength && this.validations.specialChar && this.validations.number && this.validations.upper && this.validations.lower
+    },
+    
   }
 }
 </script>
@@ -741,5 +825,17 @@ input::placeholder {
     background: rgba(255, 122, 58, 0.06);
     color: var(--color-primary, #ff7a3a);
 }
+
+/* Password validation styles (neutral colors; no green/red on inputs) */
+.password-requirements {
+  margin: 10px auto 0;
+  padding-left: 54px;
+  max-width: 440px;
+  color: #b7c6d1;
+  font-size: 13px;
+  list-style: none;
+}
+.password-requirements li { margin-bottom: 6px; color: #b7c6d1; }
+.confirm-status { margin-top: 8px; padding-left: 54px; color: #b7c6d1; font-size: 13px; }
 
 </style>
