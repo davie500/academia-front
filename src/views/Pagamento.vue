@@ -190,10 +190,6 @@ const dadosPix = ref({
 
 const pixGerado = ref(false)
 
-/* =============================
-   COMPUTEDS
-============================= */
-
 const planoAtual = computed(() =>
   precos.value[planoSelecionado.value][periodo.value]
 )
@@ -215,10 +211,6 @@ const nomePlano = computed(() =>
   planoSelecionado.value === 'plus' ? 'Plano Plus' : 'Plano Básico'
 )
 
-/* =============================
-   FORMATADORES
-============================= */
-
 function formatar(valor: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -238,10 +230,6 @@ function formatarCPF(event: Event) {
 
   dadosPix.value.cpf = value
 }
-
-/* =============================
-   MERCADO PAGO
-============================= */
 
 const publicKey = 'APP_USR-ea797ca3-e3cd-4984-82ef-8357bae31316'
 const brickController = ref<any>(null)
@@ -314,10 +302,6 @@ async function initCardBrick() {
   )
 }
 
-/* =============================
-   PIX
-============================= */
-
 async function gerarPixQrCode() {
   try {
     const { data } = await api.post('/api/pagamentos', {
@@ -369,10 +353,6 @@ function voltarFormularioPix() {
   if (container) container.innerHTML = ''
 }
 
-/* =============================
-   WATCHERS
-============================= */
-
 watch(formaPagamento, async (metodo) => {
   if (brickController.value) {
     await brickController.value.unmount()
@@ -395,10 +375,6 @@ watch(preco, async () => {
 
   await initCardBrick()
 })
-
-/* =============================
-   INIT
-============================= */
 
 onMounted(async () => {
   loading.value = true
