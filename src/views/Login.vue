@@ -37,88 +37,10 @@
             </div>
           </div>
 
-          <div class="terms-row">
-            <label class="checkbox">
-              <input type="checkbox" id="terms" v-model="acceptedTerms" @change="onTermsToggle"/>
-              <span class="checkbox-box" :class="{checked: acceptedTerms}"></span>
-              <span class="terms-text">Aceito os <a class="link" href="#" @click.prevent="openTerms">Termos e Condições</a> e a <a class="link" href="#" @click.prevent="openTerms">Política de Privacidade</a></span>
-            </label>
-          </div>
-
-          <div v-show="showTermsModal" class="modal" role="dialog" aria-modal="true">
-            <div class="modal-content">
-                <h2>Termos e Condições de Uso</h2>
-
-                <p>
-                  Estes Termos e Condições regem o uso da plataforma Treos. Ao utilizar
-                  os serviços oferecidos, o usuário declara ter lido, compreendido e aceitado
-                  integralmente as disposições abaixo.
-                </p>
-
-                <h3>1. Aceite</h3>
-                <p>
-                  O acesso e utilização da plataforma implicam na aceitação destes Termos.
-                  Caso não concorde com alguma cláusula, o usuário deve abster-se de utilizar
-                  os serviços.
-                </p>
-
-                <h3>2. Cadastro e Segurança</h3>
-                <p>
-                  O usuário é responsável pela veracidade das informações fornecidas no
-                  momento do cadastro, bem como pela guarda e confidencialidade de suas credenciais.
-                  Notificações de uso não autorizado devem ser comunicadas imediatamente.
-                </p>
-
-                <h3>3. Uso do Serviço</h3>
-                <p>
-                  O usuário concorda em utilizar a plataforma de forma lícita e em conformidade
-                  com a legislação aplicável. É vedado o uso da plataforma para atividades
-                  ilícitas, violação de direitos de terceiros ou práticas que prejudiquem o
-                  funcionamento dos serviços.
-                </p>
-
-                <h3>4. Pagamentos e Cancelamentos</h3>
-                <p>
-                  Quando aplicável, pagamentos por serviços serão cobrados conforme o plano
-                  escolhido. Políticas de cancelamento e reembolso são detalhadas nos termos
-                  específicos de cada plano e estão sujeitas às regras comerciais informadas.
-                </p>
-
-                <h3>5. Proteção de Dados</h3>
-                <p>
-                  As informações pessoais são tratadas conforme nossa Política de Privacidade.
-                  Adotamos medidas técnicas e organizacionais adequadas para proteger os dados
-                  dos usuários, observando a legislação vigente.
-                </p>
-
-                <h3>6. Limitação de Responsabilidade</h3>
-                <p>
-                  Na máxima extensão permitida pela lei, a plataforma não será responsável por
-                  danos indiretos, lucros cessantes ou perdas decorrentes do uso ou incapacidade
-                  de uso dos serviços, salvo disposição em contrário prevista na legislação.
-                </p>
-
-                <h3>7. Alterações</h3>
-                <p>
-                  Reservamo-nos o direito de modificar estes Termos a qualquer momento. Usuários
-                  serão notificados sobre alterações relevantes e o uso continuado caracteriza
-                  aceitação das novas condições.
-                </p>
-
-                <h3>8. Contato</h3>
-                <p>
-                  Para dúvidas ou solicitações relativas aos Termos e à Política de Privacidade,
-                  entre em contato através dos canais oficiais disponíveis na plataforma.
-                </p>
-
-              <div class="modal-actions">
-                <button type="button" class="btn-voltar" @click="closeTerms">Fechar</button>
-                <button type="button" class="btn-aceitar" @click="acceptTerms">Entendi</button>
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" class="primary" :disabled="!acceptedTerms" :aria-disabled="!acceptedTerms">ENTRAR</button>
+          <button type="submit" class="primary" :disabled="isLoading" :aria-busy="isLoading">
+            <span v-if="isLoading" class="btn-content"><span class="spinner" aria-hidden="true"></span>Entrando...</span>
+            <span v-else class="btn-content">ENTRAR</span>
+          </button>
         </form>
 
         <div class="card-footer">
@@ -134,12 +56,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/stores/auth'
+
+const { login } = useAuth()
 
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
-const showTermsModal = ref(false)
-const acceptedTerms = ref(false)
+const isLoading = ref(false)
 
 const router = useRouter()
 const toast = useToast()
@@ -148,27 +72,8 @@ function togglePassword() {
   showPassword.value = !showPassword.value
 }
 
-function openTerms() {
-  showTermsModal.value = true
-}
-
-function closeTerms() {
-  showTermsModal.value = false
-}
-
-function acceptTerms() {
-  acceptedTerms.value = true
-  showTermsModal.value = false
-}
-
-function onTermsToggle() {
-  if (acceptedTerms.value) {
-    acceptedTerms.value = false
-    openTerms()
-  }
-}
-
 async function handleLogin() {
+  isLoading.value = true
   try {
     const response = await axios.post('http://127.0.0.1:8000/api/auth/login', {
       email: email.value,
@@ -176,96 +81,111 @@ async function handleLogin() {
     })
 
     if (response.data && response.data.token) {
-      localStorage.setItem('token', response.data.token)
+      login(response.data.token)
       toast.success('Login realizado com sucesso')
       setTimeout(() => router.push('/'), 700)
     } else {
-      toast.error('Credenciais inválidas')
+      toast.error('Email ou senha incorretos')
     }
   } catch (err) {
-    const msg = err?.response?.data?.message || 'Erro ao efetuar login'
-    toast.error(msg)
+    const status = err?.response?.status
+    if (status === 401 || status === 400) {
+      toast.error('Email ou senha incorretos')
+    } else {
+      const msg = err?.response?.data?.message || 'Erro ao efetuar login'
+      toast.error(msg)
+    }
     console.error(err)
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
 
 <style scoped>
-/* Layout */
-.page-bg{
+.page-bg {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.5)), url('/assets/login.png');
+  background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.5)), url('/assets/login.png');
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
   font-family: Inter, Arial, Helvetica, sans-serif;
   color: #e6eef6;
+  position: relative;
 }
-.login-wrap{
+
+.login-wrap {
   width: 100%;
   max-width: 520px;
   padding: 36px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  max-height: calc(100vh - 48px);
 }
+
 .header {
-    text-align: center;
-    margin-bottom: 18px;
+  text-align: center;
+  margin-bottom: 18px;
 }
 
 .brand-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: nowrap;
-    white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .welcome {
-    font-size: var(--font-size-3xl);
-    margin: 0;
-    color: var(--color-text-primary);
-    font-weight: 700;
-    display: inline-block;
+  font-size: var(--font-size-3xl);
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 700;
+  display: inline-block;
 }
 
 .brand {
-    color: var(--color-primary);
-    font-size: var(--font-size-3xl);
-    margin: 0;
-    font-weight: 800;
-    letter-spacing: 1px;
-    text-shadow: 0 8px 30px rgba(255, 122, 58, 0.08);
-    display: inline-block;
+  color: var(--color-primary);
+  font-size: var(--font-size-3xl);
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-shadow: 0 8px 30px rgba(255, 122, 58, 0.08);
+  display: inline-block;
 }
 
 .lead {
-    margin-top: 8px;
-    color: var(--color-text-primary);
+  margin-top: 8px;
+  color: var(--color-text-primary);
 }
 
-.card{
+.card {
   width: 100%;
-  background: linear-gradient(180deg, rgba(6,18,28,1), rgba(7,12,18,1));
-  border: 1px solid rgba(255,122,58,0.04);
+  background: linear-gradient(180deg, rgba(6, 18, 28, 1), rgba(7, 12, 18, 1));
+  border: 1px solid rgba(255, 122, 58, 0.04);
   padding: 36px 32px;
   border-radius: calc(var(--radius-md) + 4px);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   min-height: 420px;
 }
 
 .form {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .field {
-    margin-bottom: 18px;
+  margin-bottom: 18px;
 }
 
 .field label {
@@ -276,7 +196,7 @@ async function handleLogin() {
   width: 92%;
   max-width: 440px;
   text-align: left;
-  padding-left: 21px; 
+  padding-left: 21px;
 }
 
 .input-with-icon {
@@ -290,7 +210,7 @@ async function handleLogin() {
   padding: 10px 12px;
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(18, 23, 29, 0.85), rgba(12, 16, 20, 0.75));
-  border: 0.5px solid rgba(255,255,255,0.03);
+  border: 0.5px solid rgba(255, 255, 255, 0.03);
 }
 
 .input-with-icon .icon {
@@ -301,14 +221,16 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,122,58,0.06);
+  background: rgba(255, 122, 58, 0.06);
   border-radius: 8px;
   padding: 6px;
   color: var(--color-primary);
-  border: 1px solid rgba(255,122,58,0.10);
+  border: 1px solid rgba(255, 122, 58, 0.10);
 }
 
-.input-with-icon .icon svg{ display: block; }
+.input-with-icon .icon svg {
+  display: block;
+}
 
 .input-with-icon input {
   background: transparent;
@@ -346,103 +268,121 @@ async function handleLogin() {
 }
 
 .terms-row {
-    margin: 10px 0 20px 0;
+  margin: 10px 0 20px 0;
 }
 
 .checkbox {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    color: #b7c6d1;
-    font-size: 14px;
-    position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #b7c6d1;
+  font-size: 14px;
+  position: relative;
 }
 
 .checkbox input[type="checkbox"] {
-    position: absolute;
-    left: -9999px;
+  position: absolute;
+  left: -9999px;
 }
 
 .checkbox .link {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .checkbox .checkbox-box {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    margin-right: 8px;
-    transition: all .2s ease;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  margin-right: 8px;
+  transition: all .2s ease;
 }
 
 .checkbox .checkbox-box.checked {
-    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
-    border-color: transparent;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  border-color: transparent;
 }
 
 .checkbox .checkbox-box.checked::after {
-    content: '';
-    width: 6px;
-    height: 10px;
-    border-left: 2px solid #08111a;
-    border-bottom: 2px solid #08111a;
-    transform: rotate(-45deg);
-    display: block;
+  content: '';
+  width: 6px;
+  height: 10px;
+  border-left: 2px solid #08111a;
+  border-bottom: 2px solid #08111a;
+  transform: rotate(-45deg);
+  display: block;
 }
 
 .terms-text {
-    display: inline-block;
+  display: inline-block;
 }
 
 .primary {
-    margin-top: 6px;
-    width: 100%;
-    padding: 14px;
-    border-radius: var(--radius-md);
-    border: none;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
-    color: #08111a;
-    font-weight: 800;
-    font-size: 16px;
-    box-shadow: 0 10px 30px rgba(255, 122, 58, 0.14);
-    cursor: pointer;
+  margin-top: 20px;
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  color: #08111a;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 0 10px 30px rgba(255, 122, 58, 0.14);
+  cursor: pointer;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .primary:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.02);
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .card-footer {
-    margin-top: 16px;
-    text-align: center;
-    color: #9fb7c3;
+  margin-top: 16px;
+  text-align: center;
+  color: #9fb7c3;
 }
 
 .signup {
-    color: #ff7a3a;
-    font-weight: 700;
-    text-decoration: none;
+  color: #ff7a3a;
+  font-weight: 700;
+  text-decoration: none;
 }
-/* Modal (termos) */
-.modal{
+
+.modal {
   display: flex;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
+  background: rgba(0, 0, 0, 0.75);
   z-index: 999;
   align-items: center;
   justify-content: center;
 }
 
-.modal-content{
+.modal-content {
   background: var(--color-bg-darker);
   color: var(--color-text-white);
   width: 90%;
@@ -451,35 +391,37 @@ async function handleLogin() {
   padding: 24px;
   border-radius: var(--radius-md);
   overflow: auto;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,122,58,0.06);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 122, 58, 0.06);
 }
 
 .modal-content h2,
-.modal-content h3{ color: var(--color-primary); }
+.modal-content h3 {
+  color: var(--color-primary);
+}
 
-.modal-content p{
+.modal-content p {
   color: var(--color-text-primary);
   line-height: 1.6;
   font-size: 14px;
 }
 
-.btn-voltar{
+.btn-voltar {
   margin-top: 18px;
   padding: 12px 14px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   color: var(--color-text-primary);
   font-weight: 700;
   cursor: pointer;
 }
 
-.btn-aceitar{
+.btn-aceitar {
   margin-top: 18px;
   margin-left: 12px;
   padding: 12px 18px;
-  background: linear-gradient(90deg,var(--color-primary),var(--color-primary-dark));
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
   border: none;
   border-radius: 8px;
   color: #08111a;
@@ -487,16 +429,20 @@ async function handleLogin() {
   cursor: pointer;
 }
 
-.btn-aceitar[disabled]{ opacity: 0.6; cursor: not-allowed; filter: grayscale(0.05); }
+.btn-aceitar[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.05);
+}
 
-.primary[disabled]{
+.primary[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
   filter: grayscale(0.05);
   box-shadow: none;
 }
 
-.back-home{
+.back-home {
   position: absolute;
   top: 18px;
   left: 18px;
@@ -510,11 +456,29 @@ async function handleLogin() {
   text-decoration: none;
   font-size: 14px;
 }
-.back-home svg{ color: var(--color-text-white); }
-.back-home:hover{ background: rgba(255,122,58,0.06); color: var(--color-primary); }
 
-@media (max-width:520px){
-  .brand{ font-size:40px; }
-  .card{ padding:20px; }
+.back-home svg {
+  color: var(--color-text-white);
+}
+
+.back-home:hover {
+  background: rgba(255, 122, 58, 0.06);
+  color: var(--color-primary);
+}
+
+@media (max-width:520px) {
+  .brand {
+    font-size: 40px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .login-wrap {
+    position: static;
+    transform: none;
+    margin: 28px auto;
+  }
 }
 </style>

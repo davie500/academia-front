@@ -83,7 +83,7 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const response = await api.get('/api/planoPeriodo')
+    const response = await api.get('/planoPeriodo')
     console.log('Resposta da API:', response.data)
 
   const mapa: Record<string, PlanoAgrupado> = {}

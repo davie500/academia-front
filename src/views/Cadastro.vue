@@ -4,11 +4,6 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Voltar para Home</span>
     </router-link>
-    <div class="toast-container">
-      <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type]">
-        {{ toast.message }}
-      </div>
-    </div>
     <header class="header">
       <div class="brand-row">
         <p class="welcome">Bem-vindo ao</p>
@@ -123,7 +118,10 @@
             </div>
           </div>
         </div>
-        <button type="submit" class="login-button" :disabled="!acceptedTerms || !isPasswordValid">CADASTRAR</button>
+        <button type="submit" class="login-button" :disabled="isLoading || !acceptedTerms || !isPasswordValid" :aria-busy="isLoading">
+          <span v-if="isLoading" class="btn-content"><span class="spinner" aria-hidden="true"></span>Cadastrando...</span>
+          <span v-else class="btn-content">CADASTRAR</span>
+        </button>
       </form>
       <div class="login-footer">
         <p>
@@ -138,6 +136,7 @@
 
 <script>
 import api from '@/controller/api';
+import { useToast } from 'vue-toastification'
 
 export default {
   name: 'Cadastro',
@@ -147,7 +146,6 @@ export default {
       email: '',
       password: '',
       confirmPassword: '',
-      // password validation state
       validations: {
         minLength: false,
         specialChar: false,
@@ -161,7 +159,7 @@ export default {
       touchedConfirm: false,
       showTermsModal: false,
       acceptedTerms: false,
-      toasts: []
+      isLoading: false,
     }
   },
   computed: {
@@ -177,42 +175,31 @@ export default {
     }
   },
   methods: {
-    showToast(message, type = 'error') {
-      const id = Date.now()
-      this.toasts.push({ id, message, type })
-      setTimeout(() => {
-        this.toasts = this.toasts.filter(t => t.id !== id)
-      }, 4000)
-    },
 
     handleRegister() {
-      // Validação de campos vazios
+      const toast = this.$toast || useToast()
       if (!this.name || !this.email || !this.password || !this.confirmPassword) {
-        this.showToast('Todos os campos são obrigatórios', 'error')
+        toast.error('Todos os campos são obrigatórios')
         return
       }
-
-      // Validação de senhas
       if (this.password !== this.confirmPassword) {
-        this.showToast('As senhas não coincidem', 'error')
+        toast.error('As senhas não coincidem')
         return
       }
-
-      // Validação de email básica
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(this.email)) {
-        this.showToast('E-mail inválido', 'error')
+        toast.error('E-mail inválido')
         return
       }
 
       if (!this.acceptedTerms) {
-        this.showToast('Você precisa aceitar os Termos de Uso', 'error')
+        toast.error('Você precisa aceitar os Termos de Uso')
         this.openTerms()
         return
       }
 
       if (!this.isPasswordValid) {
-        this.showToast('A senha não atende aos requisitos de segurança', 'error')
+        toast.error('A senha não atende aos requisitos de segurança')
         return
       }
 
@@ -224,28 +211,29 @@ export default {
 
       async function registerUser() {
         try {
-          const response = await api.post('/api/usuarios', body)
-          this.showToast('Cadastro realizado com sucesso!', 'success')
+          const response = await api.post('/usuarios', body)
+          toast.success('Cadastro realizado com sucesso!')
           console.log('Resposta da API:', response.data)
           
-          setTimeout(() => {
-            this.name = ''
-            this.email = ''
-            this.password = ''
-            this.confirmPassword = ''
-            this.acceptedTerms = false
-          }, 1500)
+          this.name = ''
+          this.email = ''
+          this.password = ''
+          this.confirmPassword = ''
+          this.acceptedTerms = false
 
-          setTimeout(() => {
+          this.$nextTick(() => {
             this.$router.push({ name: 'Login' })
-          }, 2000)
+          })
         } catch (error) {
           const errorMsg = error.response?.data?.message || 'Erro ao registrar usuário'
-          this.showToast(errorMsg, 'error')
+          toast.error(errorMsg)
           console.error('Erro ao registrar usuário:', error)
+        } finally {
+          this.isLoading = false
         }
       }
 
+      this.isLoading = true
       registerUser.call(this)
     },
 
@@ -272,7 +260,6 @@ export default {
     },
     onPasswordFocus() {
       this.isFocusedPassword = true
-      // start validating immediately when focused
       this.validatePassword(this.password)
     },
     onPasswordBlur() {
@@ -282,7 +269,6 @@ export default {
     },
     onConfirmInput() {
       this.touchedConfirm = true
-      // no extra validation needed here; computed `passwordsMatch` reflects current state
     },
     validatePassword(value) {
       const v = value || ''
@@ -336,6 +322,7 @@ export default {
     transform: translateX(400px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -349,10 +336,12 @@ export default {
   font-size: 14px;
   transition: color 0.3s ease;
 }
+
 .back-button:hover {
   color: #ff7a00;
   text-decoration: underline;
 }
+
 .btn-voltar {
   margin-top: 20px;
   width: 100%;
@@ -365,9 +354,29 @@ export default {
   cursor: pointer;
   font-size: 14px;
 }
+
 .btn-voltar:hover {
   opacity: 0.9;
 }
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .modal {
   display: flex;
   position: fixed;
@@ -377,6 +386,7 @@ export default {
   justify-content: center;
   align-items: center;
 }
+
 .modal-content {
   background: #111;
   color: #fff;
@@ -386,17 +396,20 @@ export default {
   padding: 25px;
   border-radius: 12px;
   overflow-y: auto;
-  border: 1px solid rgba(255,122,58,0.04);
+  border: 1px solid rgba(255, 122, 58, 0.04);
   position: relative;
 }
+
 .modal-content h2 {
   margin-bottom: 15px;
   color: #ff7a00;
 }
+
 .modal-content h3 {
   margin-top: 20px;
   color: #ff7a00;
 }
+
 .modal-content p {
   font-size: 14px;
   line-height: 1.6;
@@ -404,7 +417,10 @@ export default {
 }
 
 
-.field { margin-bottom: 22px; }
+.field {
+  margin-bottom: 22px;
+}
+
 .input-with-icon {
   display: flex;
   align-items: center;
@@ -415,262 +431,9 @@ export default {
   margin: 0 auto;
   padding: 10px 12px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(8,17,26,0.85), rgba(8,17,26,0.75));
-  border: 1px solid rgba(255,255,255,0.03);
-  box-shadow: 0 6px 18px rgba(2,8,12,0.35), inset 0 1px 0 rgba(255,255,255,0.02);
-}
-.input-with-icon .icon {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  margin-right: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,122,58,0.06);
-  border-radius: 8px;
-  padding: 6px;
-  color: var(--color-primary, #ff7a3a);
-  border: 1px solid rgba(255,122,58,0.10);
-}
-.input-with-icon input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--color-text-white, #e6eef6);
-    font-size: 15px;
-    flex: 1 1 auto;
-    padding: 6px 8px;
-    height: 36px;
-}
-
-.input-with-icon .eye {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    color: var(--color-text-secondary, #9fb7c3);
-    cursor: pointer;
-    width: 34px;
-    height: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-label { padding-left: 54px; }
-.close {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 22px;
-  cursor: pointer;
-  color: #ff7a00;
-}
-.terms {
-  display: flex;
-  gap: 8px;
-  margin: 10px 0;
-  font-size: 14px;
-}
-.terms input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  margin: 0px;
-}
-.terms-link {
-  color: #ff7a00;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.login-container {
-  position: relative;
-  min-height: 100vh;
-  background-size: cover;
-  background-position: center;
-  background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.5)), url('/assets/login.png');
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  padding: 20px;
-  font-family: Arial, Helvetica, sans-serif;
-  flex-direction: column;
-}
-.login-container::before {
-  position: absolute;
-  left: 80px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 200px;
-  font-weight: 800;
-  letter-spacing: 4px;
-  z-index: 0;
-  pointer-events: none;
-  display: none;
-}
-
-@media (min-width: 1024px) {
-  .login-container {
-    min-height: 100vh;
-  }
-  
-  .login-container::before {
-    display: block;
-  }
-}
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-}
-.logo-area {
-  position: absolute;
-  top: 40px;
-  text-align: center;
-  z-index: 2;
-  color: #fff;
-}
-.logo {
-  font-size: 36px;
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-.logo-line {
-  width: 70px;
-  height: 4px;
-  margin: 8px auto 0;
-  background: linear-gradient(90deg, red, orange);
-}
-.login-box {
-  position: relative;
-  width: 100%;
-  max-width: 460px;
-  padding: 36px 32px;
-  background: linear-gradient(180deg, rgba(6,18,28,0.95), rgba(7,12,18,0.85));
-  border-radius: 14px;
-  border: 1px solid rgba(255,122,58,0.04);
-}
-.welcome {
-  font-size: 22px;
-  margin-bottom: 2px;
-  display: flex;
-  justify-content: center;
-}
-.subtitle {
-  color: var(--color-primary);
-  margin: 12px;
-  text-align: center;
-  font-size: 12px;
-}
-.form-group {
-  margin-bottom: 0;
-}
-label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: transparent;
-  color: #fff;
-}
-input::placeholder {
-  color: #777;
-}
-.input:focus, input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-.login-button {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
-  color: #08111a;
-  font-weight: 800;
-  cursor: pointer;
-  margin-bottom: 16px;
-  transition: opacity 0.3s;
-}
-.login-button:hover {
-  opacity: 0.85;
-}
-.login-footer {
-  text-align: center;
-  font-size: 14px;
-}
-.login-footer a, .login-footer .router-link {
-  color: var(--color-primary);
-  font-weight: bold;
-  text-decoration: none;
-}
-.footer-text {
-  position: absolute;
-  bottom: 20px;
-  font-size: 13px;
-  color: #aaa;
-  z-index: 2;
-}
-.footer-text span {
-  color: var(--color-primary);
-}
-
-.login-box{
-  padding: 36px 32px;
-  background: linear-gradient(180deg, rgba(6,18,28,1), rgba(7,12,18,1));
-  border: 1px solid rgba(255,122,58,0.04);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-}
-
-.card-title {
-  text-align: center;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  margin: 0 0 18px 0;
-}
-
-.field { margin-bottom: 18px; }
-
-.field label {
-  display: block;
-  font-size: 13px;
-  color: #b7c6d1;
-  margin-bottom: 8px;
-  width: 92%;
-  max-width: 440px;
-  text-align: left;
-  padding-left: 21px;
-}
-
-/* Header (match Login.vue) */
-.header{ text-align: center; margin-bottom: 18px; }
-.brand-row{ display:flex; align-items:center; gap:12px; justify-content:center; flex-wrap:nowrap; white-space:nowrap; }
-.welcome{ font-size:var(--font-size-3xl); margin:0; color:var(--color-text-primary); font-weight:700; display:inline-block; }
-.brand{ color: var(--color-primary); font-size: var(--font-size-3xl); margin: 0; font-weight: 800; letter-spacing: 1px; text-shadow: 0 8px 30px rgba(255,122,58,0.08); display:inline-block; }
-.lead{ margin-top: 8px; color: var(--color-text-primary); }
-
-.input-with-icon {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: relative;
-  width: 92%;
-  max-width: 440px;
-  margin: 0 auto;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(18, 23, 29, 0.85), rgba(12, 16, 20, 0.75));
-  border: 0.5px solid rgba(255,255,255,0.03);
+  background: linear-gradient(180deg, rgba(8, 17, 26, 0.85), rgba(8, 17, 26, 0.75));
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 0 6px 18px rgba(2, 8, 12, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .input-with-icon .icon {
@@ -681,11 +444,11 @@ input::placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,122,58,0.06);
+  background: rgba(255, 122, 58, 0.06);
   border-radius: 8px;
   padding: 6px;
   color: var(--color-primary, #ff7a3a);
-  border: 1px solid rgba(255,122,58,0.10);
+  border: 1px solid rgba(255, 122, 58, 0.10);
 }
 
 .input-with-icon input {
@@ -715,7 +478,322 @@ input::placeholder {
   justify-content: center;
 }
 
-/* Checkbox styles (match Login.vue) */
+label {
+  padding-left: 54px;
+}
+
+.close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 22px;
+  cursor: pointer;
+  color: #ff7a00;
+}
+
+.terms {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.terms input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0px;
+}
+
+.terms-link {
+  color: #ff7a00;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.login-container {
+  position: relative;
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.5)), url('/assets/login.png');
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  padding: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  flex-direction: column;
+}
+
+.login-container::before {
+  position: absolute;
+  left: 80px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 200px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  z-index: 0;
+  pointer-events: none;
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .login-container {
+    min-height: 100vh;
+  }
+
+  .login-container::before {
+    display: block;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.logo-area {
+  position: absolute;
+  top: 40px;
+  text-align: center;
+  z-index: 2;
+  color: #fff;
+}
+
+.logo {
+  font-size: 36px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.logo-line {
+  width: 70px;
+  height: 4px;
+  margin: 8px auto 0;
+  background: linear-gradient(90deg, red, orange);
+}
+
+.login-box {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  padding: 36px 32px;
+  background: linear-gradient(180deg, rgba(6, 18, 28, 0.95), rgba(7, 12, 18, 0.85));
+  border-radius: 14px;
+  border: 1px solid rgba(255, 122, 58, 0.04);
+}
+
+.welcome {
+  font-size: 22px;
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: center;
+}
+
+.subtitle {
+  color: var(--color-primary);
+  margin: 12px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #fff;
+}
+
+input::placeholder {
+  color: #777;
+}
+
+.input:focus,
+input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  color: #08111a;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: opacity 0.3s;
+}
+
+.login-button:hover {
+  opacity: 0.85;
+}
+
+.login-footer {
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-footer a,
+.login-footer .router-link {
+  color: var(--color-primary);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.footer-text {
+  position: absolute;
+  bottom: 20px;
+  font-size: 13px;
+  color: #aaa;
+  z-index: 2;
+}
+
+.footer-text span {
+  color: var(--color-primary);
+}
+
+.login-box {
+  padding: 36px 32px;
+  background: linear-gradient(180deg, rgba(6, 18, 28, 1), rgba(7, 12, 18, 1));
+  border: 1px solid rgba(255, 122, 58, 0.04);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+.card-title {
+  text-align: center;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin: 0 0 18px 0;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  color: #b7c6d1;
+  margin-bottom: 8px;
+  width: 92%;
+  max-width: 440px;
+  text-align: left;
+  padding-left: 21px;
+}
+
+/* Header (match Login.vue) */
+.header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.welcome {
+  font-size: var(--font-size-3xl);
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 700;
+  display: inline-block;
+}
+
+.brand {
+  color: var(--color-primary);
+  font-size: var(--font-size-3xl);
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-shadow: 0 8px 30px rgba(255, 122, 58, 0.08);
+  display: inline-block;
+}
+
+.lead {
+  margin-top: 8px;
+  color: var(--color-text-primary);
+}
+
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  width: 92%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(18, 23, 29, 0.85), rgba(12, 16, 20, 0.75));
+  border: 0.5px solid rgba(255, 255, 255, 0.03);
+}
+
+.input-with-icon .icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 122, 58, 0.06);
+  border-radius: 8px;
+  padding: 6px;
+  color: var(--color-primary, #ff7a3a);
+  border: 1px solid rgba(255, 122, 58, 0.10);
+}
+
+.input-with-icon input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-white, #e6eef6);
+  font-size: 15px;
+  flex: 1 1 auto;
+  padding: 6px 8px;
+  height: 36px;
+}
+
+.input-with-icon .eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary, #9fb7c3);
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .terms-row {
   margin: 10px 0 20px 0;
 }
@@ -768,9 +846,15 @@ input::placeholder {
   display: block;
 }
 
-.terms-text { display: inline-block; }
+.terms-text {
+  display: inline-block;
+}
 
-.terms { width: 92%; max-width: 440px; margin: 16px auto 26px; }
+.terms {
+  width: 92%;
+  max-width: 440px;
+  margin: 16px auto 26px;
+}
 
 .login-button {
   margin-top: 6px;
@@ -788,9 +872,10 @@ input::placeholder {
 }
 
 .login-button:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.02);
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
+
 .login-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -798,12 +883,12 @@ input::placeholder {
 }
 
 .login-footer {
-    margin-top: 16px;
-    text-align: center;
-    color: #9fb7c3;
+  margin-top: 16px;
+  text-align: center;
+  color: #9fb7c3;
 }
 
-.back-home{
+.back-home {
   position: absolute;
   top: 18px;
   left: 18px;
@@ -817,16 +902,16 @@ input::placeholder {
   text-decoration: none;
   font-size: 14px;
 }
+
 .back-home svg {
-    color: var(--color-text-white, #e6eef6);
+  color: var(--color-text-white, #e6eef6);
 }
 
 .back-home:hover {
-    background: rgba(255, 122, 58, 0.06);
-    color: var(--color-primary, #ff7a3a);
+  background: rgba(255, 122, 58, 0.06);
+  color: var(--color-primary, #ff7a3a);
 }
 
-/* Password validation styles (neutral colors; no green/red on inputs) */
 .password-requirements {
   margin: 10px auto 0;
   padding-left: 54px;
@@ -835,7 +920,16 @@ input::placeholder {
   font-size: 13px;
   list-style: none;
 }
-.password-requirements li { margin-bottom: 6px; color: #b7c6d1; }
-.confirm-status { margin-top: 8px; padding-left: 54px; color: #b7c6d1; font-size: 13px; }
 
+.password-requirements li {
+  margin-bottom: 6px;
+  color: #b7c6d1;
+}
+
+.confirm-status {
+  margin-top: 8px;
+  padding-left: 54px;
+  color: #b7c6d1;
+  font-size: 13px;
+}
 </style>

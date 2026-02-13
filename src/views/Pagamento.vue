@@ -279,7 +279,7 @@ async function initCardBrick() {
           try {
             loading.value = true
 
-            await api.post('/api/pagamentos', {
+            await api.post('/pagamentos', {
               plano_id: planoAtual.value.plano_id,
               periodo_id: planoAtual.value.periodo_id,
               metodo: 'credit_card',
@@ -304,7 +304,7 @@ async function initCardBrick() {
 
 async function gerarPixQrCode() {
   try {
-    const { data } = await api.post('/api/pagamentos', {
+    const { data } = await api.post('/pagamentos', {
       plano_id: planoAtual.value.plano_id,
       periodo_id: planoAtual.value.periodo_id,
       metodo: 'pix',
@@ -380,7 +380,7 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const { data } = await api.get('/api/planoPeriodo')
+    const { data } = await api.get('/planoPeriodo')
 
     data.forEach((item: any) => {
       const nomePlano = item.plano.nome.toLowerCase() as Plano

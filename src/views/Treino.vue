@@ -114,7 +114,7 @@ onMounted(async () => {
 async function carregarTreinos() {
   loading.value = true
   try {
-    const response = await api.get('/api/treinos')
+    const response = await api.get('/treinos')
     treinos.value = response.data
   } catch (error) {
     console.error('Erro ao carregar treinos:', error)
