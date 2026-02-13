@@ -4,8 +4,9 @@
         <h1 class="titulo cores">Alcance Sem Limites</h1>
         <p class="descricao">Treinamento personalizado, equipamentos de última geração e uma comunidade dedicada ao seu sucesso. Comece sua jornada fitness hoje mesmo.</p>
     </div>
-    <router-link color="primary" class="plans" to="/planos">Ver Planos</router-link>
+    <router-link color="primary" class="plans" :to="{ name: 'Planos'}">Ver Planos</router-link>
 </template>
+
 
 <style>
 * {
@@ -70,5 +71,71 @@
     color: white;
     transform: translate(-50%, -50%) scale(1.1);
     box-shadow: 0 8px 20px rgba(255, 127, 0, 0.4);
+}
+
+@media (max-width: 900px) {
+    .titulo {
+        font-size: 3.2rem;
+        top: 30%;
+    }
+    .cores {
+        top: 36%;
+    }
+    .descricao {
+        font-size: 1.15em;
+        top: 55%;
+    }
+    .plans {
+        padding: 16px 32px;
+        font-size: 1em;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        box-sizing: border-box;
+        padding: 2rem 1rem;
+    }
+    .titulo {
+        position: static;
+        transform: none;
+        top: auto;
+        left: auto;
+        font-size: 1.9rem;
+        line-height: 1.1;
+        white-space: normal;
+        margin-top: 6vh;
+        text-align: center;
+        display: block;
+    }
+    .cores {
+        display: block;
+        background-image: linear-gradient(to right, #ff7f00, #ff0000);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-top: 0.25rem;
+    }
+    .descricao {
+        position: static;
+        transform: none;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        margin: 0.8rem 0 0;
+        text-align: center;
+        padding: 0 0.6rem;
+    }
+    .plans {
+        transform: none;
+        left: 11px;
+        display: block;
+        width: calc(100% - 2rem);
+        text-align: center;
+        padding: 12px 6px;
+        border-radius: 10px;
+    }
+    .plans:hover {
+        transform: scale(1.05);
+    }
 }
 </style>

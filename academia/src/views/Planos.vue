@@ -1,4 +1,4 @@
- <template>
+<template>
 
   <LoadingOverlay
     :show="loading"
@@ -32,6 +32,7 @@
           v-for="plan in planos"
           :key="plan.nome"
           :plan="plan"
+          :isPremium="plan === planoPremium"
         />
       </div>
     </div>
@@ -41,6 +42,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { computed } from 'vue'
 import PricingCard from '../components/PricingCard.vue';
 import api from '../controller/api'
 import LoadingOverlay from '../components/LoadingOverlay.vue';  
@@ -56,12 +58,17 @@ interface Vantagem {
   descricao: string;
 }
 
-interface Plano {
-  id: number;
-  nome: string;
-  preco: string;
-  periodo: string;
-  vantagens: Vantagem[];
+interface ApiPlanoPeriodo {
+  plano: {
+    nome: string
+    vantagens: Vantagem[]
+  }
+  periodo: {
+    nome: 'Mensal' | 'Anual'
+  }
+  preco: {
+    valor: string
+  }
 }
 
 interface PlanoAgrupado {
@@ -76,53 +83,47 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const response = await api.get('/api/planos')
+    const response = await api.get('/api/planoPeriodo')
+    console.log('Resposta da API:', response.data)
 
     const mapa: Record<string, PlanoAgrupado> = {}
-  
-  response.data.forEach((plano: Plano) => {
 
-  if (!mapa[plano.nome]) {
-    mapa[plano.nome] = {
-      nome: plano.nome,
-      mensal: undefined,
-      anual: undefined,
-      vantagens: []
-    }
-  }
+    response.data.forEach((plano: Plano) => {
+      if (!mapa[plano.nome]) {
+        mapa[plano.nome] = {
+          nome: plano.nome,
+          mensal: undefined,
+          anual: undefined,
+          vantagens: []
+        }
+      }
 
-  const planoAtual = mapa[plano.nome]!;
+      if (plano.periodo === 'Mensal') {
+        mapa[plano.nome].mensal = plano.preco
+      }
 
-  if (plano.periodo === 'Mensal') {
-    planoAtual.mensal = plano.preco
-  }
+      if (plano.periodo === 'Anual') {
+        mapa[plano.nome].anual = plano.preco
+      }
 
-  if (plano.periodo === 'Anual') {
-    planoAtual.anual = plano.preco
-  }
+      plano.vantagens.forEach(vantagem => {
+        const existe = mapa[plano.nome].vantagens.some(
+          v => v.id === vantagem.id
+        )
 
-  plano.vantagens.forEach(vantagem => {
+        if (!existe) {
+          mapa[plano.nome].vantagens.push(vantagem)
+        }
+      })
+    })
 
-    const existe = planoAtual.vantagens.some(
-      v => v.id === vantagem.id
-    )
-
-    if (!existe) {
-      planoAtual.vantagens.push(vantagem)
-    }
-    
-  })
-
-})
-
-planos.value = Object.values(mapa);
-
+    planos.value = Object.values(mapa)
   } catch (error) {
     console.error('Erro ao buscar planos:', error);
   } finally {
     loading.value = false;
   }
-});
+})
 
 </script>
 
@@ -133,7 +134,7 @@ planos.value = Object.values(mapa);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: rgba(0, 0, 0, 0.75);
   background-blend-mode: overlay;
   padding: 48px 16px;
 }
@@ -199,7 +200,6 @@ planos.value = Object.values(mapa);
   margin: 0;
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
   .planos-grid {
     grid-template-columns: 1fr;
@@ -246,4 +246,4 @@ planos.value = Object.values(mapa);
     font-size: 14px;
   }
 }
-</style> 
+</style> -->

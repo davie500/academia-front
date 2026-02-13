@@ -1,10 +1,8 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <router-link to="/" class="back-button">← Voltar</router-link>
       <h2 class="welcome">Bem-vindo</h2>
       <p class="subtitle">Entre na sua conta</p>
-
       <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="email">E-mail</label>
@@ -14,9 +12,8 @@
             type="email"
             placeholder="seu@email.com"
             required
-          >
+            >
         </div>
-
         <div class="form-group">
           <label for="password">Senha</label>
           <input
@@ -25,73 +22,66 @@
             type="password"
             placeholder="••••••••"
             required
-          >
+            >
         </div>
-
         <div class="options">
           <router-link to="/esqueci-senha" class="forgot">Esqueceu a senha?</router-link>
         </div>
-        <br>
-<div class="terms">
-  <input type="checkbox" id="terms" required />
-  <label for="terms">
-    Li e aceito os 
-    <span class="terms-link" @click="openTerms">Termos de Uso</span>
-  </label>
-</div>
-
-<div id="termsModal" class="modal">
-  <div class="modal-content">
-    <span class="close" @click="closeTerms">x</span>
-    <h2>Termos de Uso</h2>
-    <p>
-Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
-Caso não concorde com qualquer parte destes termos, recomendamos que não utilize nossos serviços.
-</p>
-<h3>1. Uso do site</h3>
-<p>
-O usuário compromete-se a utilizar o site de forma lícita, respeitando as leis vigentes,
-a moral e os bons costumes. É proibido o uso do site para fins ilegais, fraudulentos
-ou que possam causar prejuízo a terceiros.
-</p>
-
-<h3>2. Cadastro e segurança</h3>
-<p>
-O usuário é responsável por manter a confidencialidade de seus dados de acesso,
-incluindo login e senha. Qualquer atividade realizada com sua conta será de sua responsabilidade.
-</p>
-
-<h3>3. Privacidade</h3>
-<p>
-As informações fornecidas pelo usuário serão utilizadas apenas para fins de funcionamento
-do sistema, respeitando a privacidade e a proteção de dados conforme a legislação vigente.
-</p>
-
-<h3>4. Modificações</h3>
-<p>
-Reservamo-nos o direito de alterar estes Termos de Uso a qualquer momento,
-sem aviso prévio. Recomenda-se a verificação periódica deste conteúdo.
-</p>
-
-<h3>5. Aceitação</h3>
-<p>
-Ao marcar a opção “Li e aceito os Termos de Uso”, o usuário declara que leu,
-compreendeu e concorda com todas as condições aqui apresentadas.
-</p>
-<button type="button" class="btn-voltar" @click="closeTerms">Voltar</button>
-
-</div>
-</div>
+        <div class="terms">
+          <input type="checkbox" id="terms" required />
+          <label for="terms">
+            Li e aceito os 
+            <span class="terms-link" @click="openTerms">Termos de Uso</span>
+          </label>
+        </div>
+        <div id="termsModal" class="modal">
+          <div class="modal-content">
+            <span class="close" @click="closeTerms">x</span>
+            <h2>Termos de Uso</h2>
+            <p>
+            Ao acessar e utilizar este site, você concorda com os termos e condições descritos abaixo.
+            Caso não concorde com qualquer parte destes termos, recomendamos que não utilize nossos serviços.
+          </p>
+          <h3>1. Uso do site</h3>
+            <p>
+            O usuário compromete-se a utilizar o site de forma lícita, respeitando as leis vigentes,
+            a moral e os bons costumes. É proibido o uso do site para fins ilegais, fraudulentos
+            ou que possam causar prejuízo a terceiros.
+            </p>
+            <h3>2. Cadastro e segurança</h3>
+            <p>
+            O usuário é responsável por manter a confidencialidade de seus dados de acesso,
+            incluindo login e senha. Qualquer atividade realizada com sua conta será de sua responsabilidade.
+          </p>
+            <h3>3. Privacidade</h3>
+            <p>
+            As informações fornecidas pelo usuário serão utilizadas apenas para fins de funcionamento
+            do sistema, respeitando a privacidade e a proteção de dados conforme a legislação vigente.
+          </p>
+          <h3>4. Modificações</h3>
+            <p>
+              Reservamo-nos o direito de alterar estes Termos de Uso a qualquer momento,
+              sem aviso prévio. Recomenda-se a verificação periódica deste conteúdo.
+            </p>
+            <h3>5. Aceitação</h3>
+            <p>
+              Ao marcar a opção “Li e aceito os Termos de Uso”, o usuário declara que leu,
+              compreendeu e concorda com todas as condições aqui apresentadas.
+            </p>
+            <button type="button" class="btn-voltar" @click="closeTerms">Voltar</button>
+          </div>
+        </div>
         <button type="submit" class="login-button">
           ENTRAR
         </button>
       </form>
-
       <div class="login-footer">
         <p>
           Não tem uma conta?
-          <router-link to="/cadastro">CADASTRE-SE</router-link>
+          <router-link :to="{ name: 'Cadastro' }">Cadastre-se</router-link>
         </p>
+        <br>
+        <router-link :to="{ name: 'Dashboard' }" class="back-button">Página inicial</router-link>
       </div>
     </div>
   </div>
@@ -218,6 +208,11 @@ export default {
   display: flex;
   margin: 0px;
 }
+.terms-link {
+  color: #ff7a00;
+  cursor: pointer;
+  text-decoration: underline;
+}
 .terms a {
   color: #ff7a00;
   text-decoration: none;
@@ -276,19 +271,21 @@ export default {
   width: 100%;
   max-width: 380px;
   padding: 20px;
-  background: rgba(15, 15, 15, 0.95);
+  background: rgba(15, 15, 15, 0.92);
   border-radius: 14px;
-  box-shadow: 0 0 30px rgba(255, 80, 0, 0.25);
+  border: 1px solid gray;
 }
 .welcome {
-  font-size: 40px;
+  font-size: 30px;
   margin-bottom: 4px;
   display: flex;
   justify-content: center;
 }
 .subtitle {
   color: #ff6a00;
-  margin-bottom: 24px;
+  margin: 24px 12px;
+  text-align: center;
+  font-size: 12px;
 }
 .form-group {
   margin-bottom: 18px;
