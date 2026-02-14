@@ -21,7 +21,7 @@
       </button>
     </div>
 
-    <div v-if="treinos.length === 0" class="treino-empty">
+    <div v-if="treinosUsuario.length === 0" class="treino-empty">
       <div class="treino-empty__icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4" />
@@ -36,7 +36,7 @@
     <div v-else class="treino-container">
       <div class="treino-grid">
         <div
-          v-for="treino in treinos"
+          v-for="treino in treinosUsuario"
           :key="treino.id"
           class="treino-card"
           @click="abrirModalDetalhes(treino)"
@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import ModalCriarTreino from '../components/ModalCriarTreino.vue'
 import ModalDetalheTreino from '../components/ModalDetalheTreino.vue'
@@ -89,6 +89,8 @@ interface Treino {
   nome: string
   tipo: 'Pré-montado' | 'Personalizado'
   exercicios: Exercicio[]
+  usuario_id?: number | null
+  usuarioId?: number | null
 }
 
 const treinos = ref<Treino[]>([])
@@ -96,6 +98,14 @@ const loading = ref(false)
 const mostrarModalCriar = ref(false)
 const mostrarModalDetalhes = ref(false)
 const treinoSelecionado = ref<Treino | null>(null)
+const usuarioId = ref<number | null>(null)
+
+const treinosUsuario = computed(() => {
+  return treinos.value.filter(treino => {
+    const id = treino.usuario_id ?? treino.usuarioId
+    return id !== null && id !== undefined
+  })
+})
 
 onMounted(async () => {
   await carregarTreinos()
@@ -104,7 +114,7 @@ onMounted(async () => {
 async function carregarTreinos() {
   loading.value = true
   try {
-    const response = await api.get('/api/treinos')
+    const response = await api.get('/treinos')
     treinos.value = response.data
   } catch (error) {
     console.error('Erro ao carregar treinos:', error)

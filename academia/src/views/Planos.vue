@@ -83,7 +83,7 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    const response = await api.get('/api/planoPeriodo')
+    const response = await api.get('/planoPeriodo')
     console.log('Resposta da API:', response.data)
 
   const mapa: Record<string, PlanoAgrupado> = {}
@@ -220,6 +220,7 @@ const planoPremium = computed(() => {
   margin: 0;
 }
 
+/* Responsive */
 @media (max-width: 1024px) {
   .planos-grid {
     grid-template-columns: 1fr;

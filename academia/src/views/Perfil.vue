@@ -1,268 +1,565 @@
 <template>
-  <div class="profile-container">
-  
-    <div class="header">
-      <div>
-        <h2>Meu Perfil</h2>
-        <span class="subtitle">Área do usuário</span>
-      </div>
+  <div class="page">
+    <div class="container" v-if="!loading && usuario">
 
-      <div class="icons">
-        <button>⚙️</button>
-        <button>🚪</button>
-      </div>
-    </div>
-    
-    
-    <div class="user-info">
-      <div class="avatar">
-        <span>👤</span>
-        <div class="status"></div>
-      </div>
-      
-      <div class="user-data">
-        <h3>{{ user.name }}</h3>
-        <p>{{ user.email }}</p>
+      <!-- CARD PERFIL -->
+      <div class="card profile-card">
+        <div class="profile-left">
+          <div class="avatar-wrapper">
+            <img
+              v-if="usuario.foto_perfil"
+              :src="`data:image/webp;base64,${usuario.foto_perfil}`"
+              class="avatar"
+            />
+            <img
+              v-else
+              src="https://i.pravatar.cc/150?img=12"
+              class="avatar"
+            />
+          </div>
 
-        <div class="badges">
-          <span class="badge">Membro desde {{ user.memberSince }}</span>
-          <span class="badge advanced">{{ user.level }}</span>
+          <h2 class="name">{{ usuario.nome }}</h2>
+          <p class="email">{{ usuario.email }}</p>
+
+          <div class="badges">
+            <span class="badge filled">
+              {{ usuario.nivel_treino }}
+            </span>
+
+            <span class="badge outlined">
+              {{ usuario.objetivo }}
+            </span>
+
+            <span class="badge outlined">
+              {{ usuario.genero }}
+            </span>
+          </div>
+        </div>
+
+        <div class="profile-right">
+          <h3>Informações Pessoais</h3>
+
+          <div class="form-group">
+            <label>Altura</label>
+            <input
+              type="text"
+              :value="usuario.altura_cm + ' cm'"
+              readonly
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Peso</label>
+            <input
+              type="text"
+              :value="usuario.peso_kg + ' kg'"
+              readonly
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Data de Nascimento</label>
+            <input
+              type="text"
+              :value="formatarData(usuario.data_nascimento)"
+              readonly
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Objetivo</label>
+            <input
+              type="text"
+              :value="usuario.objetivo"
+              readonly
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Observações</label>
+            <textarea readonly>
+{{ usuario.observacoes }}
+            </textarea>
+          </div>
         </div>
       </div>
+
+      <!-- CARD PLANO -->
+      <div class="card plan-card">
+        <template v-if="usuario?.assinatura">
+          <template v-if="usuario.assinatura.status === 'active'">
+            <div class="plan-left">
+              <h2>Plano {{ usuario.assinatura.plano?.nome }}</h2>
+
+              <div>
+                <span class="status active">✓ Plano Ativo</span>
+              </div>
+
+              <p class="validity" v-if="usuario.assinatura.data_fim">Válido até: {{ formatarData(usuario.assinatura.data_fim) }}</p>
+            </div>
+
+            <div class="plan-right">
+              <router-link to="/planos" class="btn-primary">Gerenciar Plano</router-link>
+              <router-link :to="{ path: '/pagamento', query: { plano: planoQuery }}" class="btn-outline">Pagar próximo mês</router-link>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="plan-left">
+              <h2>Plano {{ usuario.assinatura.plano?.nome || '—' }}</h2>
+              <div>
+                <span class="status orange">Plano Inativo</span>
+              </div>
+            </div>
+
+            <div class="plan-right">
+              <router-link to="/planos" class="btn-primary">Assinar</router-link>
+            </div>
+          </template>
+        </template>
+
+        <template v-else>
+          <div class="plan-left">
+            <h2>Sem plano</h2>
+          </div>
+
+          <div class="plan-right">
+            <router-link to="/planos" class="btn-primary">Assinar</router-link>
+          </div>
+        </template>
+      </div>
+
+      <!-- BOTÕES -->
+      <div class="bottom-buttons">
+        <button class="btn-primary large" @click="openEdit">
+          Editar Perfil
+        </button>
+
+        
+      </div>
+
     </div>
 
-    <div class="stats">
-      <div class="card">
-        <h4>🏆 Treinos</h4>
-        <strong>{{ stats.workouts }}</strong>
-      </div>
+    <!-- Edit Modal -->
+    <div v-if="isEditOpen" class="modal-backdrop" @click.self="closeEdit">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <header class="modal-header">
+          <h4 id="modal-title">Editar Perfil</h4>
+          <button class="close" @click="closeEdit" aria-label="Fechar">×</button>
+        </header>
 
-      <div class="card active">
-        <h4>🎯 Meta Mensal</h4>
-        <strong>{{ stats.goal }}%</strong>
-      </div>
-      
-      <div class="card">
-        <h4>🔥 Sequência</h4>
-        <strong>{{ stats.streak }} dias</strong>
+        <form class="modal-body" @submit.prevent="saveEdit">
+          <div class="form-grid">
+            <label>Nome
+              <input v-model="edit.nome" type="text" />
+            </label>
+
+            <label>Email
+              <input v-model="edit.email" type="email" />
+            </label>
+
+            <label>Gênero
+              <select v-model="edit.genero">
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </label>
+
+            <label>Nível de Treino
+              <select v-model="edit.nivel_treino">
+                <option value="Iniciante">Iniciante</option>
+                <option value="Intermediário">Intermediário</option>
+                <option value="Profissional">Profissional</option>
+              </select>
+            </label>
+
+            <label>Altura (cm)
+              <input v-model="edit.altura_cm" type="text" />
+            </label>
+
+            <label>Peso (kg)
+              <input v-model="edit.peso_kg" type="text" />
+            </label>
+
+            <label>Data de Nascimento
+              <input v-model="edit.data_nascimento" type="date" />
+            </label>
+
+            <label>Objetivo
+              <input v-model="edit.objetivo" type="text" />
+            </label>
+
+            <label class="full">Observações
+              <textarea v-model="edit.observacoes" rows="4"></textarea>
+            </label>
+          </div>
+
+          <footer class="modal-actions">
+            <button type="submit" class="btn-primary">Salvar</button>
+          </footer>
+        </form>
       </div>
     </div>
-    
-    
-    <h3 class="section-title">Informações Pessoais</h3>
 
-    <div class="info-grid">
-      <div class="info-card">
-        <span>Altura</span>
-        <strong>{{ info.height }}</strong>
-      </div>
-
-      <div class="info-card">
-        <span>Peso</span>
-        <strong>{{ info.weight }}</strong>
-      </div>
-      
-      <div class="info-card">
-        <span>Objetivo</span>
-        <strong>{{ info.goal }}</strong>
-      </div>
-      
-      <div class="info-card">
-        <span>Frequência</span>
-        <strong>{{ info.frequency }}</strong>
-      </div>
-    </div>
-
-    
-    <div class="actions">
-      <button class="btn primary">Editar Perfil</button>
-      <button class="btn">Meus Treinos</button>
+    <!-- Loading -->
+    <div v-if="loading" class="loading">
+      Carregando perfil...
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import api from '@/controller/api';
-import { reactive, onMounted } from 'vue'
+<script setup>
+import api from "@/controller/api"
+import { ref, onMounted, reactive, computed } from "vue"
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 
+const usuario = ref(null)
+const loading = ref(true)
+const isEditOpen = ref(false)
+const edit = reactive({})
 
-const user = reactive({
-  name: '',
-  email: '',
-  memberSince: 'janeiro',
-  level: 'avançado'
+const planoQuery = computed(() => {
+  const nome = String(usuario.value?.assinatura?.plano?.nome || '').toLowerCase()
+  return nome.includes('plus') ? 'plus' : 'basico'
 })
 
-const loadprofile = async () =>{
-  try{
-    const res = await api.get("/auth/me");
-    
-    const data = res.data;
-    
-    user.name = data.nome;
-    user.email = data.email;
 
-  }
-  catch (e) {('Erro ao carregar perfil:')};
+function formatarData(data) {
+  if (!data) return ""
+  return new Date(data).toLocaleDateString("pt-BR")
 }
 
-
-const stats = reactive({
-  workouts: 127,
-  goal: 85,
-  streak: 15
+onMounted(async () => {
+  try {
+    const response = await api.get("/auth/me")
+    usuario.value = response.data
+    console.log("Usuário carregado:", usuario.value)
+  } catch (error) {
+    console.error("Erro ao buscar usuário:", error)
+  } finally {
+    loading.value = false
+  }
 })
 
+function openEdit() {
+  if (!usuario.value) return
+  edit.nome = usuario.value.nome
+  edit.email = usuario.value.email
+  edit.altura_cm = usuario.value.altura_cm
+  edit.peso_kg = usuario.value.peso_kg
+  edit.data_nascimento = usuario.value.data_nascimento ? usuario.value.data_nascimento.split('T')[0] : ''
+  edit.objetivo = usuario.value.objetivo
+  edit.observacoes = usuario.value.observacoes
+  edit.nivel_treino = usuario.value.nivel_treino
+  edit.genero = usuario.value.genero
+  isEditOpen.value = true
+}
 
-const info = reactive({
-  height: '1.78 m',
-  weight: '82 kg',
-  goal: 'Ganho de massa',
-  frequency: '5x por semana'
-})
+function closeEdit() {
+  isEditOpen.value = false
+}
 
+async function saveEdit() {
+  try {
+    const formData = new FormData()
 
+    formData.append('_method', 'PUT')
+    formData.append('nome', edit.nome)
+    formData.append('email', edit.email)
+    formData.append('altura_cm', edit.altura_cm)
+    formData.append('peso_kg', edit.peso_kg)
+    formData.append('data_nascimento', edit.data_nascimento)
+    formData.append('objetivo', edit.objetivo)
+    formData.append('nivel_treino', edit.nivel_treino || '')
+    formData.append('genero', edit.genero || '')
+    formData.append('observacoes', edit.observacoes)
 
-onMounted(() => {
-  loadprofile();
-});
+    if (edit.foto_perfil) {
+      formData.append('foto_perfil', edit.foto_perfil)
+    }
+
+    await api.post('/usuarios/' + usuario.value.id, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    // 🔥 BUSCA O USUÁRIO NOVAMENTE COMPLETO
+    const response = await api.get("/auth/me")
+    usuario.value = response.data
+
+    toast.success('Perfil atualizado com sucesso')
+    isEditOpen.value = false
+
+  } catch (err) {
+    console.error('Erro ao salvar perfil', err)
+    toast.error('Erro ao salvar perfil')
+  }
+}
 </script>
 
 <style scoped>
-.profile-container {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 30px;
-  background: linear-gradient(145deg, #151515, #1f1f1f);
-  border-radius: 20px;
+.page {
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 30%, #0f1a2e, #05070f 70%);
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  font-family: 'Segoe UI', sans-serif;
   color: #fff;
-  font-family: Arial, sans-serif;
 }
 
+.container {
+  width: 100%;
+  max-width: 1100px;
+}
 
-.header {
+.card {
+  background: linear-gradient(145deg, #0e1220, #0a0f1c);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 40px;
+  border: 1px solid #ff5a1f55;
+  box-shadow: 0 0 25px rgba(255, 90, 31, 0.15);
+}
+
+.profile-card {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  gap: 40px;
 }
 
-.subtitle {
-  color: #ff7a00;
-  font-size: 14px;
+.profile-left {
+  width: 35%;
 }
 
-.icons button {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
+.profile-right {
+  width: 65%;
 }
 
-
-.user-info {
-  display: flex;
-  align-items: center;
-  margin: 25px 0;
+.avatar-wrapper {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(45deg, #ff5a1f, #ff8a3d);
+  margin-bottom: 20px;
 }
 
 .avatar {
-  width: 70px;
-  height: 70px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background: #ff7a00;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  position: relative;
+  object-fit: cover;
 }
 
-.status {
-  width: 12px;
-  height: 12px;
-  background: #00ff00;
-  border-radius: 50%;
-  position: absolute;
-  bottom: 3px;
-  right: 3px;
+.name {
+  font-size: 20px;
+  margin-bottom: 5px;
 }
 
-.user-data {
-  margin-left: 15px;
+.email {
+  color: #aaa;
+  font-size: 14px;
+  margin-bottom: 20px;
 }
 
 .badges {
   display: flex;
   gap: 10px;
-  margin-top: 5px;
+  flex-wrap: wrap;
 }
 
 .badge {
-  background: #2a2a2a;
-  padding: 5px 10px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 12px;
-}
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-}
-
-.card {
-  background: #202020;
-  padding: 20px;
-  border-radius: 15px;
-  text-align: center;
-}
-.card strong {
-  font-size: 22px;
-}
-
-
-.section-title {
-  margin: 30px 0 15px;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-}
-
-.info-card {
-  background: #202020;
-  padding: 15px;
-  border-radius: 12px;
-  display: flex;
- gap: 5px;
-align-items: center;
-}
-
-.info-card span {
-  color: #aaa;
   font-size: 13px;
 }
 
-
-.actions {
-  display: flex;
-  gap: 15px;
-  margin-top: 25px;
+.badge.filled {
+  background: #ff5a1f;
+  color: white;
 }
 
-.btn {
-  flex: 1;
-  padding: 12px;
+.badge.outlined {
+  border: 1px solid #ff5a1f;
+  color: #ff5a1f;
+}
+
+.profile-right h3 {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+input,
+textarea {
+  background: #111627;
+  border: 1px solid #333a50;
   border-radius: 10px;
-  border: none;
-  background: linear-gradient(to right, #ff7a00, #ff3d00);
+  padding: 10px;
   color: white;
+  font-size: 14px;
+}
+
+textarea {
+  resize: none;
+  height: 70px;
+}
+
+.plan-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-left { flex: 1 1 auto }
+.plan-right { display:flex;gap:12px;align-items:center }
+
+.plan-right .btn-primary { margin: 0 }
+.plan-right .btn-outline { background:transparent }
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.status.active {
+  background: #1f3b2b;
+  color: #00d26a;
+  margin-top: 8px;
+  display: inline-block;
+}
+
+.status.orange {
+  background: #ff5a1f;
+  color: white;
+}
+
+.validity {
+  color: #aaa;
+  margin-top: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #ff5a1f, #ff8a3d);
+  border: none;
+  color: white;
+  padding: 10px 25px;
+  border-radius: 30px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: 0.3s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #ff5a1f;
+  color: #ff5a1f;
+  padding: 10px 25px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-outline:hover {
+  background: #ff5a1f;
+  color: white;
+}
+
+.large {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+}
+
+.bottom-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.loading {
+  color: white;
+  font-size: 18px;
+  text-align: center;
+  margin-top: 100px;
+}
+
+@media (max-width: 900px) {
+  .profile-card {
+    flex-direction: column;
+  }
+
+  .profile-left,
+  .profile-right {
+    width: 100%;
+  }
+
+  .bottom-buttons {
+    flex-direction: column;
+  }
+}
+
+/* Modal styles */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(3,6,10,0.6);display:flex;align-items:center;justify-content:center;z-index:9999
+}
+.modal{width:920px;max-width:96%;background:linear-gradient(145deg,#0e1220,#0a0f1c);border-radius:14px;padding:18px;border:1px solid rgba(255,107,53,0.08);box-shadow:0 20px 50px rgba(0,0,0,0.7)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px}
+.modal-header h4{margin:0;color:var(--color-text-white)}
+.close{background:transparent;border:0;color:var(--color-text-secondary);font-size:20px;cursor:pointer}
+.modal-body{display:flex;flex-direction:column;gap:12px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid label{display:flex;flex-direction:column;color:var(--color-text-secondary);font-size:13px}
+.form-grid input,.form-grid textarea,.form-grid select{margin-top:6px;background:#111627;border:1px solid #333a50;padding:10px;border-radius:10px;color:white;font-size:14px}
+
+.form-grid select{
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23ff5a1f' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
   cursor: pointer;
 }
 
-.primary {
-  background: linear-gradient(to right, #ff7a00, #ff3d00);
+.form-grid select:focus{
+  outline: none;
+  border-color: #ff8a3d;
+  box-shadow: 0 0 0 4px rgba(255,138,61,0.06);
 }
-</style>    
+
+.form-grid textarea{resize:vertical}
+.form-grid .full{grid-column:1/-1}
+.modal-actions{display:flex;gap:12px;justify-content:flex-end;padding-top:8px}
+
+@media (max-width:900px){
+  .form-grid{grid-template-columns:1fr}
+  .modal{width:92%}
+}
+</style>
