@@ -153,9 +153,22 @@
             />
           </div>
 
+          <div v-if="!carregandoExercicios" class="form-group">
+            <label class="form-group__label">Filtrar por Grupo Muscular</label>
+            <select v-model="grupoMuscularSelecionado" class="form-group__input">
+              <option value="todos">Todos os grupos</option>
+              <option v-for="grupo in gruposMusculares" :key="grupo" :value="grupo">
+                {{ grupo }}
+              </option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label class="form-group__label">Selecionar Exercício</label>
-            <div class="form-exercicio">
+            <div v-if="carregandoExercicios" class="carregando">
+              Carregando exercícios...
+            </div>
+            <div v-else class="form-exercicio">
               <div class="form-exercicio__dropdown">
                 <input
                   v-model="pesquisaExercicio"
@@ -227,20 +240,22 @@
       </div>
 
       <div class="modal__footer">
-        <button class="botao botao--secundario" @click="fechar">Cancelar</button>
+        <button class="botao botao--secundario" @click="fechar" :disabled="isSalvando">Cancelar</button>
         <button
           v-if="tipoSelecionado === 'personalizado' && formularioTreino.exercicios.length > 0"
           class="botao botao--primario"
           @click="salvarTreinoPersonalizado"
+          :disabled="isSalvando"
         >
-          Salvar Treino
+          {{ isSalvando ? 'Salvando...' : 'Salvar Treino' }}
         </button>
         <button
           v-if="tipoSelecionado === 'pre-montado' && treinoSelecionado"
           class="botao botao--primario"
           @click="adicionarTreinoPremontado(treinoSelecionado)"
+          :disabled="isSalvando"
         >
-          Adicionar Treino
+          {{ isSalvando ? 'Adicionando...' : 'Adicionar Treino' }}
         </button>
       </div>
     </div>
@@ -249,7 +264,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useToast } from 'vue-toastification'
 import api from '../controller/api'
+
+const toast = useToast()
 
 interface ExercicioBanco {
   id: number
@@ -319,8 +337,12 @@ const treinosPremontados = ref<TreinoPremontado[]>([])
 const treinoSelecionado = ref<TreinoPremontado | null>(null)
 const carregandoDetalhes = ref(false)
 const carregandoTreinos = ref(false)
+const carregandoExercicios = ref(false)
+const isSalvando = ref(false)
+const usuarioId = ref<number | null>(null)
 const pesquisaTreino = ref('')
 const exerciciosDisponiveis = ref<ExercicioBanco[]>([])
+const grupoMuscularSelecionado = ref<string>('todos')
 const pesquisaExercicio = ref('')
 const mostraDropdownExercicio = ref(false)
 const novoExercicio = ref<NovoExercicio>({
@@ -354,27 +376,49 @@ const treinosFiltrados = computed(() => {
   )
 })
 
+const gruposMusculares = computed(() => {
+  const grupos = new Set(exerciciosDisponiveis.value.map(ex => ex.grupo))
+  return Array.from(grupos).sort()
+})
+
 const exerciciosFiltrados = computed(() => {
-  if (!pesquisaExercicio.value.trim()) {
-    return exerciciosDisponiveis.value
+  let filtrados = exerciciosDisponiveis.value
+  
+  // Filtro por grupo muscular
+  if (grupoMuscularSelecionado.value !== 'todos') {
+    filtrados = filtrados.filter(ex => ex.grupo === grupoMuscularSelecionado.value)
   }
   
-  const termo = pesquisaExercicio.value.toLowerCase()
-  return exerciciosDisponiveis.value.filter(exercicio =>
-    exercicio.nome.toLowerCase().includes(termo) ||
-    exercicio.grupo.toLowerCase().includes(termo) ||
-    exercicio.membro_grupo.toLowerCase().includes(termo)
-  )
+  // Filtro por pesquisa
+  if (pesquisaExercicio.value.trim()) {
+    const termo = pesquisaExercicio.value.toLowerCase()
+    filtrados = filtrados.filter(exercicio =>
+      exercicio.nome.toLowerCase().includes(termo) ||
+      exercicio.membro_grupo.toLowerCase().includes(termo)
+    )
+  }
+  
+  return filtrados
 })
 onMounted(async () => {
+  await carregarUsuarioId()
   await carregarTreinosPremontados()
   await carregarExercicios()
 })
 
+async function carregarUsuarioId() {
+  try {
+    const response = await api.get('/auth/me')
+    usuarioId.value = response.data.id
+  } catch (error) {
+    console.error('Erro ao carregar ID do usuário:', error)
+  }
+}
+
 async function carregarTreinosPremontados() {
   carregandoTreinos.value = true
   try {
-    const response = await api.get('/api/treinos?publicos=true')
+    const response = await api.get('/treinos?publicos=true')
     treinosPremontados.value = response.data
   } catch (error) {
     console.error('Erro ao carregar treinos pré-montados:', error)
@@ -384,11 +428,14 @@ async function carregarTreinosPremontados() {
 }
 
 async function carregarExercicios() {
+  carregandoExercicios.value = true
   try {
-    const response = await api.get('/api/exercicios')
+    const response = await api.get('/exercicios')
     exerciciosDisponiveis.value = response.data
   } catch (error) {
     console.error('Erro ao carregar exercícios:', error)
+  } finally {
+    carregandoExercicios.value = false
   }
 }
 
@@ -436,40 +483,71 @@ function selecionarTreinoPremontado(treino: TreinoPremontado) {
 }
 
 async function adicionarTreinoPremontado(treino: TreinoPremontado) {
+  isSalvando.value = true
   try {
+    // 🔹 ROTA: POST /api/treinos
+    // 🔹 CENÁRIO: TREINO PRÉ-MONTADO
+    // 🔹 LÓGICA:
+    //    - Treino já possui exercícios previamente definidos
+    //    - Frontend apenas reutiliza exercícios existentes
+    //    - Apenas o vínculo treino × exercício é criado
+    // 🔹 BACKEND:
+    //    - Cria registro do treino para o usuário (com usuario_id)
+    //    - Exercícios já existem no banco (reutilizados)
+    //    - Cria vínculo via tabela treino_exercicio (transação)
+    //    - Tudo dentro de uma transação: tudo ou nada
+    
     const payload = {
       nome: treino.nome,
       tipo: 'Pré-montado',
+      usuario_id: usuarioId.value,
       exercicios: treino.exercicios.map(exercicio => ({
-        id: exercicio.id,
+        exercicio_id: exercicio.id,  // ⭐ ID do exercício já existente no banco
         series: exercicio.pivot.series,
         repeticoes: exercicio.pivot.repeticoes
       }))
     }
-    const response = await api.post('/api/treinos', payload)
+    
+    const response = await api.post('/treinos', payload)
+    toast.success('Treino pré-montado adicionado com sucesso!')
     emit('treino-criado', response.data)
     fechar()
   } catch (error) {
     console.error('Erro ao adicionar treino:', error)
+    toast.error('Erro ao adicionar treino pré-montado')
+  } finally {
+    isSalvando.value = false
   }
 }
 
 async function salvarTreinoPersonalizado() {
   if (!formularioTreino.value.nome.trim()) {
-    alert('Por favor, insira um nome para o treino')
+    toast.warning('Por favor, insira um nome para o treino')
     return
   }
 
+  isSalvando.value = true
   try {
     const payload = {
       nome: formularioTreino.value.nome,
       tipo: 'Personalizado',
-      exercicios: formularioTreino.value.exercicios
+      usuario_id: usuarioId.value,
+      exercicios: formularioTreino.value.exercicios.map(exercicio => ({
+        exercicio_id: exercicio.id, 
+        series: exercicio.series,
+        repeticoes: exercicio.repeticoes
+      }))
     }
-    const response = await api.post('/api/treinos', payload)
+    
+    const response = await api.post('/treinos', payload)
+    toast.success('Treino personalizado salvo com sucesso!')
     emit('treino-criado', response.data)
+    fechar()
   } catch (error) {
     console.error('Erro ao salvar treino:', error)
+    toast.error('Erro ao salvar treino personalizado')
+  } finally {
+    isSalvando.value = false
   }
 }
 
@@ -771,6 +849,41 @@ function fechar() {
   color: var(--color-text-secondary);
 }
 
+.form-group__input[type="select"],
+.form-group__input {
+  font-family: inherit;
+}
+
+select.form-group__input {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-white);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff6b35' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+select.form-group__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: rgba(255, 107, 53, 0.05);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff6b35' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+select.form-group__input option {
+  background: var(--color-bg-darker);
+  color: var(--color-text-white);
+}
+
 .form-exercicio {
   display: flex;
   gap: 12px;
@@ -986,8 +1099,13 @@ function fechar() {
   flex: 1;
 }
 
-.botao--primario:hover {
+.botao--primario:hover:not(:disabled) {
   background: var(--color-primary-dark);
+}
+
+.botao--primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .botao--secundario {
@@ -996,9 +1114,14 @@ function fechar() {
   border: 1px solid var(--color-border);
 }
 
-.botao--secundario:hover {
+.botao--secundario:hover:not(:disabled) {
   border-color: var(--color-text-primary);
   color: var(--color-text-white);
+}
+
+.botao--secundario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .detalhes-treino {

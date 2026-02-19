@@ -21,16 +21,16 @@
           <h2 class="name">{{ usuario.nome }}</h2>
           <p class="email">{{ usuario.email }}</p>
 
-          <div class="badges">
-            <span class="badge filled">
+          <div class="badges" v-if="usuario.nivel_treino || usuario.objetivo || usuario.genero">
+            <span v-if="usuario.nivel_treino" class="badge filled">
               {{ usuario.nivel_treino }}
             </span>
 
-            <span class="badge outlined">
+            <span v-if="usuario.objetivo" class="badge outlined">
               {{ usuario.objetivo }}
             </span>
 
-            <span class="badge outlined">
+            <span v-if="usuario.genero" class="badge outlined">
               {{ usuario.genero }}
             </span>
           </div>
@@ -43,8 +43,9 @@
             <label>Altura</label>
             <input
               type="text"
-              :value="usuario.altura_cm + ' cm'"
+              :value="usuario.altura_cm ? usuario.altura_cm + ' cm' : 'Você ainda não colocou este valor'"
               readonly
+              :class="{ placeholder: !usuario.altura_cm }"
             />
           </div>
 
@@ -52,8 +53,9 @@
             <label>Peso</label>
             <input
               type="text"
-              :value="usuario.peso_kg + ' kg'"
+              :value="usuario.peso_kg ? usuario.peso_kg + ' kg' : 'Você ainda não colocou este valor'"
               readonly
+              :class="{ placeholder: !usuario.peso_kg }"
             />
           </div>
 
@@ -61,8 +63,9 @@
             <label>Data de Nascimento</label>
             <input
               type="text"
-              :value="formatarData(usuario.data_nascimento)"
+              :value="usuario.data_nascimento ? formatarData(usuario.data_nascimento) : 'Você ainda não colocou este valor'"
               readonly
+              :class="{ placeholder: !usuario.data_nascimento }"
             />
           </div>
 
@@ -70,15 +73,16 @@
             <label>Objetivo</label>
             <input
               type="text"
-              :value="usuario.objetivo"
+              :value="usuario.objetivo || 'Você ainda não colocou este valor'"
               readonly
+              :class="{ placeholder: !usuario.objetivo }"
             />
           </div>
 
           <div class="form-group">
             <label>Observações</label>
-            <textarea readonly>
-{{ usuario.observacoes }}
+            <textarea readonly :class="{ placeholder: !usuario.observacoes }">
+{{ usuario.observacoes || 'Você ainda não colocou este valor' }}
             </textarea>
           </div>
         </div>
@@ -168,9 +172,9 @@
 
             <label>Nível de Treino
               <select v-model="edit.nivel_treino">
-                <option value="Iniciante">Iniciante</option>
-                <option value="Intermediário">Intermediário</option>
-                <option value="Profissional">Profissional</option>
+                <option value="Iniciante">iniciante</option>
+                <option value="Intermediário">intermediario</option>
+                <option value="Profissional">avancado</option>
               </select>
             </label>
 
@@ -187,7 +191,16 @@
             </label>
 
             <label>Objetivo
-              <input v-model="edit.objetivo" type="text" />
+              <select v-model="edit.objetivo">
+                <option value="Emagrecimento">emagrecimento</option>
+                <option value="Hipertrofia">hipertrofia</option>
+                <option value="Condicionamento">condicionamento</option>
+              </select>
+            </label>
+
+            <label class="full">Foto de Perfil
+              <input type="file" @change="handleFileUpload" accept="image/*" />
+              <small v-if="edit.foto_perfil" style="color: #00d26a; margin-top: 4px; display: block;">✓ Arquivo selecionado</small>
             </label>
 
             <label class="full">Observações
@@ -196,7 +209,10 @@
           </div>
 
           <footer class="modal-actions">
-            <button type="submit" class="btn-primary">Salvar</button>
+            <button type="submit" class="btn-primary" :disabled="isSaving">
+              <span v-if="isSaving">Salvando...</span>
+              <span v-else>Salvar</span>
+            </button>
           </footer>
         </form>
       </div>
@@ -219,6 +235,7 @@ const toast = useToast()
 const usuario = ref(null)
 const loading = ref(true)
 const isEditOpen = ref(false)
+const isSaving = ref(false)
 const edit = reactive({})
 
 const planoQuery = computed(() => {
@@ -229,7 +246,9 @@ const planoQuery = computed(() => {
 
 function formatarData(data) {
   if (!data) return ""
-  return new Date(data).toLocaleDateString("pt-BR")
+
+  const [ano, mes, dia] = data.split('T')[0].split('-')
+  return `${dia}/${mes}/${ano}`
 }
 
 onMounted(async () => {
@@ -262,7 +281,15 @@ function closeEdit() {
   isEditOpen.value = false
 }
 
+function handleFileUpload(event) {
+  const file = event.target.files[0]
+  if (file) {
+    edit.foto_perfil = file
+  }
+}
+
 async function saveEdit() {
+  isSaving.value = true
   try {
     const formData = new FormData()
 
@@ -285,7 +312,6 @@ async function saveEdit() {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    // 🔥 BUSCA O USUÁRIO NOVAMENTE COMPLETO
     const response = await api.get("/auth/me")
     usuario.value = response.data
 
@@ -295,6 +321,8 @@ async function saveEdit() {
   } catch (err) {
     console.error('Erro ao salvar perfil', err)
     toast.error('Erro ao salvar perfil')
+  } finally {
+    isSaving.value = false
   }
 }
 </script>
@@ -413,6 +441,12 @@ textarea {
   font-size: 14px;
 }
 
+input.placeholder,
+textarea.placeholder {
+  color: #888;
+  font-style: italic;
+}
+
 textarea {
   resize: none;
   height: 70px;
@@ -425,11 +459,23 @@ textarea {
   justify-content: space-between;
 }
 
-.plan-left { flex: 1 1 auto }
-.plan-right { display:flex;gap:12px;align-items:center }
+.plan-left {
+  flex: 1 1 auto
+}
 
-.plan-right .btn-primary { margin: 0 }
-.plan-right .btn-outline { background:transparent }
+.plan-right {
+  display: flex;
+  gap: 12px;
+  align-items: center
+}
+
+.plan-right .btn-primary {
+  margin: 0
+}
+
+.plan-right .btn-outline {
+  background: transparent
+}
 
 .plan-header {
   display: flex;
@@ -473,6 +519,11 @@ textarea {
 
 .btn-primary:hover {
   opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-outline {
@@ -523,20 +574,105 @@ textarea {
   }
 }
 
-/* Modal styles */
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(3,6,10,0.6);display:flex;align-items:center;justify-content:center;z-index:9999
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 10, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999
 }
-.modal{width:920px;max-width:96%;background:linear-gradient(145deg,#0e1220,#0a0f1c);border-radius:14px;padding:18px;border:1px solid rgba(255,107,53,0.08);box-shadow:0 20px 50px rgba(0,0,0,0.7)}
-.modal-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px}
-.modal-header h4{margin:0;color:var(--color-text-white)}
-.close{background:transparent;border:0;color:var(--color-text-secondary);font-size:20px;cursor:pointer}
-.modal-body{display:flex;flex-direction:column;gap:12px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-grid label{display:flex;flex-direction:column;color:var(--color-text-secondary);font-size:13px}
-.form-grid input,.form-grid textarea,.form-grid select{margin-top:6px;background:#111627;border:1px solid #333a50;padding:10px;border-radius:10px;color:white;font-size:14px}
 
-.form-grid select{
+.modal {
+  width: 920px;
+  max-width: 96%;
+  background: linear-gradient(145deg, #0e1220, #0a0f1c);
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 107, 53, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px
+}
+
+.modal-header h4 {
+  margin: 0;
+  color: var(--color-text-white)
+}
+
+.close {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary);
+  font-size: 20px;
+  cursor: pointer
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+  padding-right: 8px;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #ff5a1f;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #ff8a3d;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text-secondary);
+  font-size: 13px
+}
+
+.form-grid input,
+.form-grid textarea,
+.form-grid select {
+  margin-top: 6px;
+  background: #111627;
+  border: 1px solid #333a50;
+  padding: 10px;
+  border-radius: 10px;
+  color: white;
+  font-size: 14px
+}
+
+.form-grid input[type="file"] {
+  cursor: pointer;
+}
+
+.form-grid select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -548,18 +684,34 @@ textarea {
   cursor: pointer;
 }
 
-.form-grid select:focus{
+.form-grid select:focus {
   outline: none;
   border-color: #ff8a3d;
-  box-shadow: 0 0 0 4px rgba(255,138,61,0.06);
+  box-shadow: 0 0 0 4px rgba(255, 138, 61, 0.06);
 }
 
-.form-grid textarea{resize:vertical}
-.form-grid .full{grid-column:1/-1}
-.modal-actions{display:flex;gap:12px;justify-content:flex-end;padding-top:8px}
+.form-grid textarea {
+  resize: vertical
+}
 
-@media (max-width:900px){
-  .form-grid{grid-template-columns:1fr}
-  .modal{width:92%}
+.form-grid .full {
+  grid-column: 1/-1
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px
+}
+
+@media (max-width:900px) {
+  .form-grid {
+    grid-template-columns: 1fr
+  }
+
+  .modal {
+    width: 92%
+  }
 }
 </style>

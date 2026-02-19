@@ -26,7 +26,7 @@ const props = defineProps({
   align-items:center;
   justify-content:center;
   background: rgba(0,0,0,1);
-  z-index:1200;
+  z-index:12000;
 }
 .panel{
   display:flex;

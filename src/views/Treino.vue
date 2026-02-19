@@ -44,7 +44,9 @@
           <div class="treino-card__header">
             <div class="treino-card__icon">
               <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 4a4 4 0 110 8 4 4 0 010-8z" />
+                <path d="M6 4h3v16H6V4zm9 0h3v16h-3V4zm-4 6h8v4h-8v-4z" />
+                <circle cx="4" cy="12" r="1.5" />
+                <circle cx="20" cy="12" r="1.5" />
               </svg>
             </div>
             <span class="treino-card__tipo">{{ treino.tipo }}</span>
@@ -144,6 +146,7 @@ function fecharModalDetalhes() {
 function adicionarTreino(novoTreino: Treino) {
   treinos.value.push(novoTreino)
   fecharModalCriar()
+  carregarTreinos()
 }
 
 function atualizarTreino(treinoAtualizado: Treino) {

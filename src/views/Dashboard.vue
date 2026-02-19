@@ -15,6 +15,7 @@
 .fundo {
     width: 100%;
     height: 100vh;
+    background-image: url('/assets/fundo.png');
     object-fit: cover;
     position: absolute;
     top: 0;

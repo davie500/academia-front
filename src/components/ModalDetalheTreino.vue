@@ -35,7 +35,13 @@
             <div class="exercicio-detalhe__info">
               <h4 class="exercicio-detalhe__nome">{{ exercicio.nome }}</h4>
               <p class="exercicio-detalhe__series">
-                {{ exercicio.series }} séries × {{ exercicio.repeticoes }} repetições
+                {{
+                  exercicio.series !== undefined && exercicio.repeticoes !== undefined
+                    ? exercicio.series + ' séries × ' + exercicio.repeticoes + ' repetições'
+                    : exercicio.pivot && exercicio.pivot.series !== undefined && exercicio.pivot.repeticoes !== undefined
+                      ? exercicio.pivot.series + ' séries × ' + exercicio.pivot.repeticoes + ' repetições'
+                      : 'Séries e repetições não informadas'
+                }}
               </p>
             </div>
           </div>
@@ -55,11 +61,17 @@
 </template>
 
 <script setup lang="ts">
+interface PivotData {
+  series: number
+  repeticoes: number
+}
+
 interface Exercicio {
   id?: number
   nome: string
-  series: number
-  repeticoes: number
+  series?: number
+  repeticoes?: number
+  pivot?: PivotData
 }
 
 interface Treino {
@@ -97,7 +109,7 @@ function editarTreino() {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
+  z-index: 10000;
   padding: 16px;
 }
 
