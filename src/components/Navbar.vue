@@ -2,7 +2,6 @@
   <nav class="navbar">
     <div class="navbar-brand">
       <h1 class="brand-title">Treos</h1>
-      <router-link :to="{ name: 'Admin' }">Admin</router-link>
     </div>
 
     <button class="side-toggle" @click="togglePanel" :aria-expanded="isOpen" aria-label="Abrir menu" role="button" tabindex="0" @keydown.enter="togglePanel">
@@ -32,6 +31,7 @@
           <router-link class="side-link" to="/treinos" @click="closePanel">Treinos</router-link>
           <router-link class="side-link" to="/notas" @click="closePanel">Anotações</router-link>
           <router-link class="side-link" to="/perfil" @click="closePanel">Perfil</router-link>
+          <router-link class="side-link" :to="{ name: 'Admin' }">Admin</router-link>
       </nav>
     </div>
   </aside>
@@ -263,7 +263,8 @@ onUnmounted(() => { document.body.style.overflow = '' })
   font-size: 1.25rem;
   padding: 0.6rem 0;
   transition: transform 0.34s ease, opacity 0.34s ease, color 0.28s ease;
-  opacity: 0;
+  opacity: 1;
+  transition-delay: 0.30s;
   display: flex;
   align-items: center;
   position: relative

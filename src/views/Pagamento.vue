@@ -25,7 +25,7 @@
                 @click="periodo = 'mensal'"
               >
                 <div class="rotulo">Mensal</div>
-                <div class="valor">{{ formatar(precos[planoSelecionado].mensal) }}</div>
+                <div class="valor">{{ formatar(precos[planoSelecionado].mensal.preco) }}</div>
                 <div class="descricao">por mês</div>
               </button>
 
@@ -34,7 +34,7 @@
                 @click="periodo = 'anual'"
               >
                 <div class="rotulo">Anual</div>
-                <div class="valor">{{ formatar(precos[planoSelecionado].anual) }}</div>
+                <div class="valor">{{ formatar(precos[planoSelecionado].anual.preco) }}</div>
                 <div class="descricao">por ano</div>
                 <span v-if="periodo === 'anual'" class="selo">Economize</span>
               </button>

@@ -113,7 +113,7 @@
             </div>
 
             <div class="plan-right">
-              <router-link to="/planos" class="btn-primary">Assinar</router-link>
+              <router-link :to="{ name: 'Planos' }" class="btn-primary">Assinar</router-link>
             </div>
           </template>
         </template>
@@ -124,12 +124,11 @@
           </div>
 
           <div class="plan-right">
-            <router-link to="/planos" class="btn-primary">Assinar</router-link>
+            <router-link :to="{ name: 'Planos' }" class="btn-primary">Assinar</router-link>
           </div>
         </template>
       </div>
 
-      <!-- BOTÕES -->
       <div class="bottom-buttons">
         <button class="btn-primary large" @click="openEdit">
           Editar Perfil
@@ -285,7 +284,6 @@ async function saveEdit() {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    // 🔥 BUSCA O USUÁRIO NOVAMENTE COMPLETO
     const response = await api.get("/auth/me")
     usuario.value = response.data
 
@@ -469,6 +467,7 @@ textarea {
   cursor: pointer;
   margin-top: 20px;
   transition: 0.3s;
+  text-decoration: none;
 }
 
 .btn-primary:hover {
@@ -523,7 +522,6 @@ textarea {
   }
 }
 
-/* Modal styles */
 .modal-backdrop{
   position:fixed;inset:0;background:rgba(3,6,10,0.6);display:flex;align-items:center;justify-content:center;z-index:9999
 }

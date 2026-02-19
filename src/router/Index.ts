@@ -26,7 +26,7 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
 router.beforeEach((to, from, next) => {
   const { isAuthenticated } = useAuth()
@@ -40,4 +40,4 @@ router.beforeEach((to, from, next) => {
   }
 })
 
-export default router
+export default router;

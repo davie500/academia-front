@@ -178,7 +178,6 @@ async function handleLogin() {
   padding: 36px 32px;
   border-radius: calc(var(--radius-md) + 4px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  /* min-height: 420px; */
 }
 
 .form {
@@ -487,6 +486,7 @@ async function handleLogin() {
     margin: 24px auto 0;
     max-height: none;
     padding: 0;
+    margin-top: 230px;
   }
 
   .field label,
