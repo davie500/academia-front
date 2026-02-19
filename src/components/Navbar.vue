@@ -26,11 +26,17 @@
   <aside class="side-panel" :class="{ open: isOpen }" @click.self="closePanel">
     <div class="side-panel-inner">
       <nav class="side-nav">
-          <router-link class="side-link" to="/" @click="closePanel">Home</router-link>
-          <router-link class="side-link" to="/planos" @click="closePanel">Planos</router-link>
-          <router-link class="side-link" to="/treinos" @click="closePanel">Treinos</router-link>
-          <router-link class="side-link" to="/notas" @click="closePanel">Anotações</router-link>
-          <router-link class="side-link" to="/perfil" @click="closePanel">Perfil</router-link>
+        <template v-for="(item, i) in navItems" :key="i">
+          <router-link v-if="showItem(item) && !isLocked(item)" class="side-link" :to="item.path" @click="closePanel">{{ item.label }}</router-link>
+
+          <div v-else-if="showItem(item) && isLocked(item)" class="side-link locked" role="button" tabindex="0" @click="handleLockedClick(item)" @keydown.enter="handleLockedClick(item)" :aria-disabled="true" :title="item.lockTitle || 'Bloqueado'">
+            <span>{{ item.label }}</span>
+            <svg class="lock-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 17a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="currentColor"/>
+              <path d="M17 8h-1V6a4 4 0 10-8 0v2H7a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1zm-7-2a2 2 0 114 0v2h-4V6z" fill="currentColor"/>
+            </svg>
+          </div>
+        </template>
       </nav>
     </div>
   </aside>
@@ -40,12 +46,45 @@
 import { ref, watch, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/stores/auth'
+import { useToast } from 'vue-toastification'
 
 const route = useRoute()
 const isOpen = ref(false)
 
 const router = useRouter()
-const { isAuthenticated, logout } = useAuth()
+const { isAuthenticated, logout, nivelNome } = useAuth()
+const toast = useToast()
+
+const userLevel = computed(() => Number(nivelNome.value || 0))
+
+const navItems = [
+  { path: '/', label: 'Home' },
+  { path: '/planos', label: 'Planos' },
+  { path: '/treinos', label: 'Treinos', requiredLevel: 1, requiresAuth: true, lockTitle: 'Requer nível 1' },
+  { path: '/notas', label: 'Anotações', requiredLevel: 1, requiresAuth: true, lockTitle: 'Requer nível 1' },
+  { path: '/perfil', label: 'Perfil', requiresAuth: true }
+]
+
+console.log('nivelNome:', nivelNome.value)
+console.log('userLevel:', userLevel.value)
+
+function isLocked(item) {
+  if (typeof item.requiredLevel === 'number') {
+    return userLevel.value < item.requiredLevel
+  }
+  return false
+}
+
+function showItem(item) {
+  if (item.requiresAuth && !isAuthenticated.value) return false
+  return true
+}
+
+function handleLockedClick(item) {
+  toast.info('Para acessar esta página você deve atualizar seu plano')
+  closePanel()
+  router.push('/planos')
+}
 
 const backdropOpacity = computed(() => (route.path === '/' || route.name === 'Home') ? 0.6 : 0.45)
 
@@ -267,6 +306,16 @@ onUnmounted(() => { document.body.style.overflow = '' })
   align-items: center;
   position: relative
 }
+
+.side-link.locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255,255,255,0.95);
+}
+
+.lock-icon{ color: rgba(255,255,255,0.92); flex:0 0 18px }
 
 .side-link::before {
   display: none

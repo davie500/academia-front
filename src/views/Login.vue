@@ -108,6 +108,8 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
   background-image: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.5)), url('/assets/login.png');
   background-position: center center;
   background-repeat: no-repeat;
@@ -176,7 +178,6 @@ async function handleLogin() {
   padding: 36px 32px;
   border-radius: calc(var(--radius-md) + 4px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  min-height: 420px;
 }
 
 .form {
@@ -468,17 +469,77 @@ async function handleLogin() {
 
 @media (max-width:520px) {
   .brand {
-    font-size: 40px;
+    font-size: 32px;
+  }
+
+  .welcome {
+    font-size: 30px;
   }
 
   .card {
-    padding: 20px;
+    padding: 18px 14px;
   }
 
   .login-wrap {
     position: static;
     transform: none;
-    margin: 28px auto;
+    margin: 24px auto 0;
+    max-height: none;
+    padding: 0;
+    margin-top: 230px;
+  }
+
+  .field label,
+  .input-with-icon {
+    width: 100%;
+    max-width: none;
+  }
+
+  .field label {
+    padding-left: 0;
+  }
+
+  .input-with-icon {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .input-with-icon .icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    padding: 5px;
+  }
+
+  .input-with-icon input {
+    font-size: 14px;
+  }
+
+  .back-home {
+    top: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width:768px) {
+  .page-bg {
+    align-items: flex-start;
+    padding-top: 64px;
+  }
+
+  .login-wrap {
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+    max-height: none;
+    padding: 0;
+  }
+
+  .card {
+    min-height: auto;
   }
 }
 </style>

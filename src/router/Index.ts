@@ -15,9 +15,9 @@ const routes = [
   { path: '/login', name: 'Login', component: Login , meta: { hideNavbar: true }},
   { path: '/planos', name: 'Planos', component: Planos },
   { path: '/pagamento', name: 'Pagamento', component: Pagamento, meta: { hideNavbar: true, requiresAuth: true }},
-  { path: '/treinos', name: 'Treino', component: Treino , meta: { requiresAuth: true }},
+  { path: '/treinos', name: 'Treino', component: Treino , meta: { requiresAuth: true, requiredLevel: 1}},
   { path: '/cadastro', name: 'Cadastro', component: Cadastro, meta: { hideNavbar: true } },
-  { path: '/notas', name: 'Notas', component: Anotacoes, meta: { requiresAuth: true }},
+  { path: '/notas', name: 'Notas', component: Anotacoes, meta: { requiresAuth: true, requiredLevel: 1 } },
   { path: '/perfil', name: 'Perfil', component: Perfil, meta: { requiresAuth: true } },
 ]
 
@@ -26,16 +26,28 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
+router.beforeEach(async (to, from, next) => {
+  const auth = useAuth()
+  const toast = useToast()
 
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
-    const toast = useToast()
-    toast.error('Você precisa estar logado')
-    next('/login')
-  } else {
-    next()
+  if (to.meta.requiresAuth) {
+
+    if (!auth.token.value) {
+      toast.error('Você precisa estar logado')
+      return next('/login')
+    }
+
+    if (typeof to.meta.requiredLevel === 'number') {
+      const nivelUsuario = Number(auth.nivelNome.value || 0)
+
+      if (nivelUsuario < to.meta.requiredLevel) {
+        toast.error('Seu plano não permite acessar esta página')
+        return next('/planos')
+      }
+    }
   }
+
+  next()
 })
 
 export default router;
