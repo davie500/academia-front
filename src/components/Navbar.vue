@@ -49,24 +49,27 @@ import { useAuth } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 
 const route = useRoute()
+const router = useRouter()
 const isOpen = ref(false)
 
-const router = useRouter()
-const { isAuthenticated, logout, nivelNome } = useAuth()
+const auth = useAuth()
 const toast = useToast()
 
-const userLevel = computed(() => Number(nivelNome.value || 0))
+const isAuthenticated = computed(() => auth.isAuthenticated)
+const userLevel = computed(() => Number(auth.nivel || 0))
 
 const navItems = [
   { path: '/', label: 'Home' },
   { path: '/planos', label: 'Planos' },
-  { path: '/treinos', label: 'Treinos', requiredLevel: 1, requiresAuth: true, lockTitle: 'Requer nível 1' },
-  { path: '/notas', label: 'Anotações', requiredLevel: 1, requiresAuth: true, lockTitle: 'Requer nível 1' },
+  { path: '/treinos', label: 'Treinos', requiredLevel: 1, requiresAuth: true },
+  { path: '/notas', label: 'Anotações', requiredLevel: 1, requiresAuth: true },
   { path: '/perfil', label: 'Perfil', requiresAuth: true }
 ]
 
-console.log('nivelNome:', nivelNome.value)
-console.log('userLevel:', userLevel.value)
+function logout() {
+  auth.logout()
+  router.push('/login')
+}
 
 function isLocked(item) {
   if (typeof item.requiredLevel === 'number') {
@@ -80,28 +83,31 @@ function showItem(item) {
   return true
 }
 
-function handleLockedClick(item) {
+function handleLockedClick() {
   toast.info('Para acessar esta página você deve atualizar seu plano')
   closePanel()
   router.push('/planos')
 }
 
-const backdropOpacity = computed(() => (route.path === '/' || route.name === 'Home') ? 0.6 : 0.45)
+const backdropOpacity = computed(() =>
+  route.path === '/' ? 0.6 : 0.45
+)
 
 function togglePanel() {
-  console.log('Navbar: togglePanel clicked', isOpen.value)
   isOpen.value = !isOpen.value
 }
 
 function closePanel() {
-  console.log('Navbar: closePanel')
   isOpen.value = false
 }
 
 watch(isOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
-onUnmounted(() => { document.body.style.overflow = '' })
+
+onUnmounted(() => {
+  document.body.style.overflow = ''
+})
 </script>
 
 <style>

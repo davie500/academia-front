@@ -56,9 +56,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
-import { useAuth } from '@/stores/auth'
+import { useAuth } from '@/stores/auth.js'
 
-const { login } = useAuth()
+const auth = useAuth()
 
 const email = ref('')
 const password = ref('')
@@ -80,21 +80,27 @@ async function handleLogin() {
       password: password.value,
     })
 
-    if (response.data && response.data.token) {
-      login(response.data.token)
-      toast.success('Login realizado com sucesso')
-      setTimeout(() => router.push('/'), 700)
+    if (response.data?.token) {
+      console.log('Login bem-sucedido:', response.data)
+      auth.login(response.data)
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+
+      toast.success('Login realizado com sucesso 🚀')
+
+      router.push('/')
     } else {
       toast.error('Email ou senha incorretos')
     }
   } catch (err) {
     const status = err?.response?.status
+
     if (status === 401 || status === 400) {
       toast.error('Email ou senha incorretos')
     } else {
-      const msg = err?.response?.data?.message || 'Erro ao efetuar login'
-      toast.error(msg)
+      toast.error(err?.response?.data?.message || 'Erro ao efetuar login')
     }
+
     console.error(err)
   } finally {
     isLoading.value = false
