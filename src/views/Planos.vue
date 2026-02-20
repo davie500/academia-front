@@ -33,6 +33,9 @@
           :key="plan.nome"
           :plan="plan"
           :isPremium="plan === planoPremium"
+          :nivelUsuario="nivelUsuario"
+          :planoAtualNome="planoAtualNome"
+          :planoPlainsMap="planoNivelMap"
         />
       </div>
     </div>
@@ -45,12 +48,19 @@ import { onMounted, ref } from 'vue';
 import { computed } from 'vue'
 import PricingCard from '../components/PricingCard.vue';
 import api from '../controller/api'
-import LoadingOverlay from '../components/LoadingOverlay.vue';  
+import LoadingOverlay from '../components/LoadingOverlay.vue';
+// @ts-ignore
+import { useAuth } from '@/stores/auth.js'
+
+const auth = useAuth()
 
 const planos = ref<PlanoAgrupado[]>([
 ]);
 
 const loading = ref(false);
+const nivelUsuario = ref<string>('');
+const planoAtualNome = ref<string>('');
+const planoNivelMap = ref<Record<string, number>>({});
 
 interface Vantagem {
   id: number;
@@ -61,6 +71,10 @@ interface Vantagem {
 interface ApiPlanoPeriodo {
   plano: {
     nome: string
+    nivel?: {
+      id: number
+      nome: string | number
+    }
     vantagens: Vantagem[]
   }
   periodo: {
@@ -76,6 +90,7 @@ interface PlanoAgrupado {
   mensal?: string;
   anual?: string;
   vantagens: Vantagem[];
+  nivel?: number;
 }
 
 
@@ -83,6 +98,11 @@ onMounted(async () => {
   loading.value = true
 
   try {
+    // Carregar dados do usuário apenas se estiver autenticado
+    if (auth.token) {
+      await carregarDadosUsuario()
+    }
+    
     const response = await api.get('/planoPeriodo')
     console.log('Resposta da API:', response.data)
 
@@ -96,7 +116,8 @@ onMounted(async () => {
         nome: nomePlano,
         mensal: undefined,
         anual: undefined,
-        vantagens: []
+        vantagens: [],
+        nivel: item.plano.nivel ? Number(item.plano.nivel.id) : undefined
       }
     }
 
@@ -122,12 +143,33 @@ onMounted(async () => {
   })
 
   planos.value = Object.values(mapa)
+  
+  // Mapear níveis dos planos a partir do atributo nivel ou pela ordem
+  planos.value.forEach((plano, index) => {
+    if (plano.nivel) {
+      planoNivelMap.value[plano.nome] = plano.nivel
+    } else {
+      planoNivelMap.value[plano.nome] = index + 1
+    }
+  })
   } catch (error) {
     console.error('Erro ao carregar planos', error)
   } finally {
     loading.value = false
   }
 })
+
+async function carregarDadosUsuario() {
+  try {
+    const response = await api.get('/auth/me')
+    if (response.data.assinatura?.plano?.nivel?.nome) {
+      nivelUsuario.value = response.data.assinatura.plano.nivel.nome
+      planoAtualNome.value = response.data.assinatura.plano.nome
+    }
+  } catch (error) {
+    console.error('Erro ao carregar dados do usuário:', error)
+  }
+}
 
 function getValorMaximo(plano: PlanoAgrupado): number {
   if (plano.anual) return Number(plano.anual)

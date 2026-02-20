@@ -11,41 +11,71 @@
       </div>
 
       <div class="modal__content">
-        <p class="modal__subtitle">Escolha o tipo de treino que deseja criar</p>
-
-        <div class="opcoes-container">
-          <div
-            class="opcao-card"
-            @click="selecionarTipo('pre-montado')"
-            :class="{ 'opcao-card--active': tipoSelecionado === 'pre-montado' }"
-          >
-            <h3 class="opcao-card__title">Treino Pré-montado</h3>
-            <p class="opcao-card__descricao">
-              Escolha entre treinos prontos criados por profissionais
-            </p>
-          </div>
-
-          <div
-            class="opcao-card"
-            @click="selecionarTipo('personalizado')"
-            :class="{ 'opcao-card--active': tipoSelecionado === 'personalizado' }"
-          >
-            <h3 class="opcao-card__title">Treino Personalizado</h3>
-            <p class="opcao-card__descricao">
-              Monte seu treino do zero com exercícios customizados
-            </p>
+        <div v-if="carregandoInicial" class="loading-inicial">
+          <div class="loading-inicial__container">
+            <div class="loading-inicial__spinner"></div>
+            <h3 class="loading-inicial__title">Carregando dados</h3>
+            <p class="loading-inicial__subtitle">Preparando para montar seu treino...</p>
+            <div class="loading-inicial__items">
+              <div class="loading-inicial__item" :class="{ 'loading-inicial__item--done': !carregandoTreinos }">
+                <span class="loading-inicial__item-icon">{{ !carregandoTreinos ? '✓' : '' }}</span>
+                <span class="loading-inicial__item-text">Treinos pré-montados</span>
+              </div>
+              <div class="loading-inicial__item" :class="{ 'loading-inicial__item--done': !carregandoExercicios }">
+                <span class="loading-inicial__item-icon">{{ !carregandoExercicios ? '✓' : '' }}</span>
+                <span class="loading-inicial__item-text">Exercícios disponíveis</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div v-if="tipoSelecionado === 'pre-montado' && !treinoSelecionado" class="treino-lista">
-          <h3 class="treino-lista__title">Treinos Pré-montados</h3>
-          <p class="treino-lista__subtitle">Selecione um treino profissional</p>
+        <template v-else>
+          <p class="modal__subtitle">Escolha o tipo de treino que deseja criar</p>
 
-          <div v-if="carregandoTreinos" class="carregando">
-            Carregando treinos...
+          <div class="opcoes-container">
+            <div
+              class="opcao-card"
+              @click="selecionarTipo('pre-montado')"
+              :class="{ 'opcao-card--active': tipoSelecionado === 'pre-montado' }"
+            >
+              <h3 class="opcao-card__title">Treino Pré-montado</h3>
+              <p class="opcao-card__descricao">
+                Escolha entre treinos prontos criados por profissionais
+              </p>
+            </div>
+
+            <div
+              class="opcao-card"
+              :class="{ 
+                'opcao-card--active': tipoSelecionado === 'personalizado',
+                'opcao-card--bloqueado': nivelUsuario < 2
+              }"
+              @click="nivelUsuario >= 2 ? selecionarTipo('personalizado') : irParaPlanos()"
+            >
+              <div v-if="nivelUsuario < 2" class="opcao-card__overlay">
+                <div class="opcao-card__lock">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1L9 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-4l-3-3zm0 5a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
+                  </svg>
+                </div>
+                <p class="opcao-card__lock-text">Requer Plano Plus</p>
+              </div>
+              <h3 class="opcao-card__title">Treino Personalizado</h3>
+              <p class="opcao-card__descricao">
+                Monte seu treino do zero com exercícios customizados
+              </p>
+            </div>
           </div>
 
-          <template v-else>
+          <div v-if="tipoSelecionado === 'pre-montado' && !treinoSelecionado" class="treino-lista">
+            <h3 class="treino-lista__title">Treinos Pré-montados</h3>
+            <p class="treino-lista__subtitle">Selecione um treino profissional</p>
+
+            <div v-if="carregandoTreinos" class="carregando">
+              Carregando treinos...
+            </div>
+
+            <template v-else>
             <div class="treino-lista__pesquisa">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="treino-lista__pesquisa-icon">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -237,6 +267,7 @@
             </div>
           </div>
         </div>
+        </template>
       </div>
 
       <div class="modal__footer">
@@ -265,9 +296,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
 import api from '../controller/api'
 
 const toast = useToast()
+const router = useRouter()
 
 interface ExercicioBanco {
   id: number
@@ -336,10 +369,11 @@ const tipoSelecionado = ref<'pre-montado' | 'personalizado' | null>(null)
 const treinosPremontados = ref<TreinoPremontado[]>([])
 const treinoSelecionado = ref<TreinoPremontado | null>(null)
 const carregandoDetalhes = ref(false)
-const carregandoTreinos = ref(false)
-const carregandoExercicios = ref(false)
+const carregandoTreinos = ref(true)
+const carregandoExercicios = ref(true)
 const isSalvando = ref(false)
 const usuarioId = ref<number | null>(null)
+const nivelUsuario = ref<number>(0)
 const pesquisaTreino = ref('')
 const exerciciosDisponiveis = ref<ExercicioBanco[]>([])
 const grupoMuscularSelecionado = ref<string>('todos')
@@ -400,16 +434,24 @@ const exerciciosFiltrados = computed(() => {
   
   return filtrados
 })
+
+const carregandoInicial = computed(() => {
+  return carregandoTreinos.value || carregandoExercicios.value
+})
+
 onMounted(async () => {
   await carregarUsuarioId()
   await carregarTreinosPremontados()
   await carregarExercicios()
+  console.log(nivelUsuario.value)
 })
 
 async function carregarUsuarioId() {
   try {
     const response = await api.get('/auth/me')
     usuarioId.value = response.data.id
+    nivelUsuario.value = response.data.assinatura.plano.nivel.nome || 1
+    console.log(response.data)
   } catch (error) {
     console.error('Erro ao carregar ID do usuário:', error)
   }
@@ -485,24 +527,12 @@ function selecionarTreinoPremontado(treino: TreinoPremontado) {
 async function adicionarTreinoPremontado(treino: TreinoPremontado) {
   isSalvando.value = true
   try {
-    // 🔹 ROTA: POST /api/treinos
-    // 🔹 CENÁRIO: TREINO PRÉ-MONTADO
-    // 🔹 LÓGICA:
-    //    - Treino já possui exercícios previamente definidos
-    //    - Frontend apenas reutiliza exercícios existentes
-    //    - Apenas o vínculo treino × exercício é criado
-    // 🔹 BACKEND:
-    //    - Cria registro do treino para o usuário (com usuario_id)
-    //    - Exercícios já existem no banco (reutilizados)
-    //    - Cria vínculo via tabela treino_exercicio (transação)
-    //    - Tudo dentro de uma transação: tudo ou nada
-    
     const payload = {
       nome: treino.nome,
       tipo: 'Pré-montado',
       usuario_id: usuarioId.value,
       exercicios: treino.exercicios.map(exercicio => ({
-        exercicio_id: exercicio.id,  // ⭐ ID do exercício já existente no banco
+        exercicio_id: exercicio.id,
         series: exercicio.pivot.series,
         repeticoes: exercicio.pivot.repeticoes
       }))
@@ -511,6 +541,7 @@ async function adicionarTreinoPremontado(treino: TreinoPremontado) {
     const response = await api.post('/treinos', payload)
     toast.success('Treino pré-montado adicionado com sucesso!')
     emit('treino-criado', response.data)
+    resetarFormulario()
     fechar()
   } catch (error) {
     console.error('Erro ao adicionar treino:', error)
@@ -542,6 +573,7 @@ async function salvarTreinoPersonalizado() {
     const response = await api.post('/treinos', payload)
     toast.success('Treino personalizado salvo com sucesso!')
     emit('treino-criado', response.data)
+    resetarFormulario()
     fechar()
   } catch (error) {
     console.error('Erro ao salvar treino:', error)
@@ -551,7 +583,32 @@ async function salvarTreinoPersonalizado() {
   }
 }
 
+function resetarFormulario() {
+  tipoSelecionado.value = null
+  treinoSelecionado.value = null
+  formularioTreino.value = {
+    nome: '',
+    exercicios: []
+  }
+  pesquisaTreino.value = ''
+  pesquisaExercicio.value = ''
+  grupoMuscularSelecionado.value = 'todos'
+  mostraDropdownExercicio.value = false
+  novoExercicio.value = {
+    id: '',
+    series: 3,
+    repeticoes: 12
+  }
+}
+
+function irParaPlanos() {
+  resetarFormulario()
+  emit('fechar')
+  router.push('/planos')
+}
+
 function fechar() {
+  resetarFormulario()
   emit('fechar')
 }
 </script>
@@ -566,7 +623,7 @@ function fechar() {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
+  z-index: 100000;
   padding: 16px;
 }
 
@@ -655,6 +712,7 @@ function fechar() {
   background: rgba(26, 31, 46, 0.5);
   cursor: pointer;
   transition: var(--transition-base);
+  position: relative;
 }
 
 .opcao-card:hover {
@@ -665,6 +723,62 @@ function fechar() {
 .opcao-card--active {
   border-color: var(--color-primary);
   background: rgba(255, 107, 53, 0.1);
+}
+
+.opcao-card--bloqueado {
+  cursor: not-allowed;
+}
+
+.opcao-card--bloqueado:hover {
+  border-color: var(--color-border);
+  background: rgba(26, 31, 46, 0.5);
+}
+
+.opcao-card__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  border-radius: var(--radius-md);
+  z-index: 10;
+}
+
+.opcao-card__lock {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.2);
+  border-radius: 50%;
+  margin-bottom: 12px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.opcao-card__lock svg {
+  width: 32px;
+  height: 32px;
+  color: #ef4444;
+}
+
+.opcao-card__lock-text {
+  font-size: var(--font-size-sm);
+  color: #ef4444;
+  margin: 0;
+  font-weight: var(--font-weight-bold);
 }
 
 .opcao-card__title {
@@ -1283,6 +1397,110 @@ select.form-group__input option {
   color: var(--color-text-secondary);
   padding: 24px;
   font-size: var(--font-size-sm);
+}
+
+.loading-inicial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 40px 24px;
+}
+
+.loading-inicial__container {
+  text-align: center;
+  max-width: 300px;
+}
+
+.loading-inicial__spinner {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 24px;
+  border: 4px solid rgba(255, 107, 53, 0.1);
+  border-top: 4px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-inicial__title {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-white);
+  margin: 0 0 8px 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.loading-inicial__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 24px 0;
+}
+
+.loading-inicial__items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading-inicial__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 107, 53, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.loading-inicial__item--done {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.loading-inicial__item-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 53, 0.1);
+  border-radius: 50%;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.loading-inicial__item--done .loading-inicial__item-icon {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.loading-inicial__item-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+
+.loading-inicial__item--done .loading-inicial__item-text {
+  color: var(--color-text-white);
 }
 
 @media (max-width: 600px) {

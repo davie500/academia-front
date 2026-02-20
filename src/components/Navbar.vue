@@ -12,10 +12,24 @@
       <div class="navbar-end">
         <div class="login-wrap">
           <template v-if="isAuthenticated">
-            <button class="login-btn" @click="logout">Sair</button>
+            <button class="auth-btn auth-btn--logout" @click="logout">
+              <svg class="auth-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Sair
+            </button>
           </template>
           <template v-else>
-            <router-link class="login-btn" to="/login">Login</router-link>
+            <router-link class="auth-btn auth-btn--login" to="/login">
+              <svg class="auth-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
+              </svg>
+              Login
+            </router-link>
           </template>
         </div>
       </div>
@@ -394,6 +408,60 @@ onUnmounted(() => {
   top: 50%;
   transform: translateY(-50%);
   z-index: 1450;
+}
+
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 132, 132, 0.15);
+  border: 1.5px solid #ff6b35;
+}
+
+.auth-btn__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.auth-btn--login {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
+  border: none;
+}
+
+.auth-btn--login:hover {
+  background: linear-gradient(135deg, #ff7a4a 0%, #ff6633 100%);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+  transform: translateY(-2px);
+}
+
+.auth-btn--login:active {
+  transform: translateY(0);
+}
+
+.auth-btn--logout {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 107, 53, 0.6);
+}
+
+.auth-btn--logout:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #ff6b35;
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.25);
+  transform: translateY(-2px);
+}
+
+.auth-btn--logout:active {
+  transform: translateY(0);
 }
 
 .login-btn {

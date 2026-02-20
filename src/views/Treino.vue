@@ -69,6 +69,7 @@
     :treino="treinoSelecionado"
     @fechar="fecharModalDetalhes"
     @treino-atualizado="atualizarTreino"
+    @treino-excluido="excluirTreino"
   />
 </template>
 
@@ -146,13 +147,21 @@ function fecharModalDetalhes() {
 function adicionarTreino(novoTreino: Treino) {
   treinos.value.push(novoTreino)
   fecharModalCriar()
-  carregarTreinos()
 }
 
 function atualizarTreino(treinoAtualizado: Treino) {
   const index = treinos.value.findIndex(t => t.id === treinoAtualizado.id)
   if (index !== -1) {
     treinos.value[index] = treinoAtualizado
+  }
+  fecharModalDetalhes()
+}
+
+async function excluirTreino(id: number) {
+  // Remove o treino da lista imediatamente
+  const index = treinos.value.findIndex(t => t.id === id)
+  if (index !== -1) {
+    treinos.value.splice(index, 1)
   }
   fecharModalDetalhes()
 }

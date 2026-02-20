@@ -60,10 +60,19 @@
     </div>
 
     <button
-      :class="['pricing-card__button', { 'pricing-card__button--orange': isPremium }]"
+      :class="[
+        'pricing-card__button',
+        { 
+          'pricing-card__button--orange': isPremium,
+          'pricing-card__button--atual': planoStatus.tipo === 'atual',
+          'pricing-card__button--incluido': planoStatus.tipo === 'incluido',
+          'pricing-card__button--upgrade': planoStatus.tipo === 'upgrade'
+        }
+      ]"
       @click="assinarPlano"
+      :disabled="planoStatus.tipo === 'atual' || planoStatus.tipo === 'incluido'"
     >
-      assinar
+      {{ planoStatus.label }}
     </button>
   </div>
 </template>
@@ -73,6 +82,7 @@
 <script setup lang="ts">
 
 import { useRouter } from 'vue-router'
+import { computed } from 'vue'
 
 interface Vantagem {
   id: number;
@@ -92,6 +102,9 @@ const props = withDefaults(
     plan: PlanoAgrupado;
     isPremium?: boolean;
     buttonText?: string;
+    nivelUsuario?: string;
+    planoAtualNome?: string;
+    planoPlainsMap?: Record<string, number>;
   }>(),
   {
     buttonText: 'Assinar Agora'
@@ -99,6 +112,54 @@ const props = withDefaults(
 )
 
 const router = useRouter()
+
+// Computed para determinar o estado do plano
+const planoStatus = computed(() => {
+  // Se o usuário não tem plano
+  if (!props.planoAtualNome) {
+    return {
+      tipo: 'assinar',
+      label: 'Assinar Agora',
+      descricao: ''
+    }
+  }
+
+  // Se é o plano atual do usuário
+  if (props.planoAtualNome === props.plan.nome) {
+    return {
+      tipo: 'atual',
+      label: 'Plano Atual',
+      descricao: 'Você está usando este plano'
+    }
+  }
+
+  // Se o plano é mais caro (upgrade disponível)
+  const nivelAtual = props.planoPlainsMap?.[props.planoAtualNome] || 0
+  const nivelNovo = props.planoPlainsMap?.[props.plan.nome] || 0
+
+  if (nivelNovo > nivelAtual) {
+    return {
+      tipo: 'upgrade',
+      label: 'Atualizar Plano',
+      descricao: 'Upgrade disponível'
+    }
+  }
+
+  // Se o plano é mais barato (downgrade - incluído no atual)
+  if (nivelNovo < nivelAtual) {
+    return {
+      tipo: 'incluido',
+      label: 'Incluído no Plano Atual',
+      descricao: 'Já incluso na sua assinatura'
+    }
+  }
+
+  return {
+    tipo: 'assinar',
+    label: 'Assinar Agora',
+    descricao: ''
+  }
+})
 
 function assinarPlano() {
   const plano = props.plan.nome.toLowerCase() 
@@ -236,6 +297,37 @@ function assinarPlano() {
 
 .pricing-card__button--orange:hover {
   background: #ff5722;
+}
+
+.pricing-card__button--atual {
+  background: #64748b;
+  cursor: default;
+}
+
+.pricing-card__button--atual:hover {
+  background: #64748b;
+}
+
+.pricing-card__button--incluido {
+  background: #10b981;
+  cursor: default;
+}
+
+.pricing-card__button--incluido:hover {
+  background: #10b981;
+}
+
+.pricing-card__button--upgrade {
+  background: #ff6b35;
+}
+
+.pricing-card__button--upgrade:hover {
+  background: #ff5722;
+}
+
+.pricing-card__button:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
 }
 
 /* Responsive */
