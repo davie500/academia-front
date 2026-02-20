@@ -29,9 +29,9 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
+  const auth = useAuth()
 
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
     const toast = useToast()
     toast.error('Você precisa estar logado')
     next('/login')

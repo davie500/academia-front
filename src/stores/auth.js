@@ -1,28 +1,37 @@
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { defineStore } from 'pinia'
 
-const token = ref(localStorage.getItem('token'))
+export const useAuth = defineStore('auth', {
+  state: () => ({
+    token: localStorage.getItem('token'),
+    user: JSON.parse(localStorage.getItem('user')),
+    nivel: Number(localStorage.getItem('nivel') || 0),
+    assinatura: localStorage.getItem('assinatura') === 'true'
+  }),
 
-export function useAuth() {
-  const router = useRouter()
+  getters: {
+    isAuthenticated: (state) => !!state.token
+  },
 
-  const isAuthenticated = computed(() => !!token.value)
+  actions: {
+    login(data) {
+      this.token = data.token
+      this.user = data.usuario
+      this.nivel = Number(data.nivel_nome || 0)
+      this.assinatura = data.assinatura_ativa
 
-  function login(newToken) {
-    token.value = newToken
-    localStorage.setItem('token', newToken)
+      localStorage.setItem('token', this.token)
+      localStorage.setItem('user', JSON.stringify(this.user))
+      localStorage.setItem('nivel', this.nivel)
+      localStorage.setItem('assinatura', this.assinatura)
+    },
+
+    logout() {
+      this.token = null
+      this.user = null
+      this.nivel = 0
+      this.assinatura = false
+
+      localStorage.clear()
+    }
   }
-
-  function logout() {
-    token.value = null
-    localStorage.removeItem('token')
-    router.push('/login')
-  }
-
-  return {
-    token,
-    isAuthenticated,
-    login,
-    logout
-  }
-}
+})

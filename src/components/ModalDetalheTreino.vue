@@ -3,9 +3,11 @@
     <div class="modal">
       <div class="modal__header">
         <div class="modal__header-content">
-          <div class="modal__icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 4a4 4 0 110 8 4 4 0 010-8z" />
+          <div class="modal__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="8" width="3" height="8" rx="0.8" />
+              <rect x="20" y="8" width="3" height="8" rx="0.8" />
+              <rect x="7" y="10" width="10" height="4" rx="0.8" />
             </svg>
           </div>
           <div class="modal__header-texto">
@@ -35,7 +37,13 @@
             <div class="exercicio-detalhe__info">
               <h4 class="exercicio-detalhe__nome">{{ exercicio.nome }}</h4>
               <p class="exercicio-detalhe__series">
-                {{ exercicio.series }} séries × {{ exercicio.repeticoes }} repetições
+                {{
+                  exercicio.series !== undefined && exercicio.repeticoes !== undefined
+                    ? exercicio.series + ' séries × ' + exercicio.repeticoes + ' repetições'
+                    : exercicio.pivot && exercicio.pivot.series !== undefined && exercicio.pivot.repeticoes !== undefined
+                      ? exercicio.pivot.series + ' séries × ' + exercicio.pivot.repeticoes + ' repetições'
+                      : 'Séries e repetições não informadas'
+                }}
               </p>
             </div>
           </div>
@@ -43,23 +51,40 @@
       </div>
 
       <div class="modal__footer">
-        <button class="botao botao--secundario" @click="fechar">
-          Fechar
-        </button>
-        <button class="botao botao--primario" @click="editarTreino">
-          Editar
-        </button>
+        <div class="modal__footer-left">
+          <button class="botao botao--danger" @click="excluirTreino" :disabled="loading">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon-small">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Excluir
+          </button>
+        </div>
+
+        <div class="modal__footer-right">
+          <button class="botao botao--secundario" @click="fechar" :disabled="loading">
+            Fechar
+          </button>
+          <button class="botao botao--primario" @click="editarTreino" :disabled="loading">
+            Editar
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+interface PivotData {
+  series: number
+  repeticoes: number
+}
+
 interface Exercicio {
   id?: number
   nome: string
-  series: number
-  repeticoes: number
+  series?: number
+  repeticoes?: number
+  pivot?: PivotData
 }
 
 interface Treino {
@@ -69,6 +94,9 @@ interface Treino {
   exercicios: Exercicio[]
 }
 
+import { ref } from 'vue'
+import api from '../controller/api'
+
 const props = defineProps<{
   treino: Treino
 }>()
@@ -76,14 +104,37 @@ const props = defineProps<{
 const emit = defineEmits<{
   fechar: []
   'treino-atualizado': [treino: Treino]
+  'treino-excluido': [id: number]
 }>()
 
+const loading = ref(false)
+
 function fechar() {
-  emit('fechar')
+  if (!loading.value) emit('fechar')
 }
 
 function editarTreino() {
+  if (loading.value) return
   fechar()
+}
+
+async function excluirTreino() {
+  if (loading.value) return
+
+  const ok = window.confirm('Deseja realmente excluir este treino? Esta ação não pode ser desfeita.')
+  if (!ok) return
+
+  loading.value = true
+  try {
+    await api.delete(`/treinos/${props.treino.id}`)
+    emit('treino-excluido', props.treino.id)
+    fechar()
+  } catch (error) {
+    console.error('Erro ao excluir treino:', error)
+    alert('Não foi possível excluir o treino. Tente novamente.')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -97,7 +148,7 @@ function editarTreino() {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
+  z-index: 10000;
   padding: 16px;
 }
 
@@ -261,6 +312,22 @@ function editarTreino() {
   border-bottom-right-radius: var(--radius-md);
 }
 
+.modal__footer {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal__footer-left {
+  display: flex;
+  align-items: center;
+}
+
+.modal__footer-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .botao {
   padding: 12px 24px;
   border: none;
@@ -290,5 +357,23 @@ function editarTreino() {
 .botao--secundario:hover {
   border-color: var(--color-text-primary);
   color: var(--color-text-white);
+}
+
+.botao--danger {
+  background: var(--color-secondary);
+  color: white;
+  border: none;
+}
+
+.botao--danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.icon-small {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 </style>

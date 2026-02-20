@@ -98,7 +98,6 @@ const stats = computed(() => ({
 
 <style scoped>
 .admin {
-  min-height: 100vh;
   padding: 24px;
   background: linear-gradient(180deg, var(--color-bg-dark), var(--color-bg-darker));
   color: var(--color-text-white);
@@ -118,7 +117,6 @@ const stats = computed(() => ({
 }
 
 .topbar p {
-  margin: 4px 0 0;
   color: var(--color-text-secondary);
 }
 

@@ -2,7 +2,6 @@
   <div class="page">
     <div class="container" v-if="!loading && usuario">
 
-      <!-- CARD PERFIL -->
       <div class="card profile-card">
         <div class="profile-left">
           <div class="avatar-wrapper">
@@ -84,7 +83,6 @@
         </div>
       </div>
 
-      <!-- CARD PLANO -->
       <div class="card plan-card">
         <template v-if="usuario?.assinatura">
           <template v-if="usuario.assinatura.status === 'active'">
@@ -128,18 +126,13 @@
           </div>
         </template>
       </div>
-
       <div class="bottom-buttons">
         <button class="btn-primary large" @click="openEdit">
           Editar Perfil
         </button>
-
-        
       </div>
-
     </div>
 
-    <!-- Edit Modal -->
     <div v-if="isEditOpen" class="modal-backdrop" @click.self="closeEdit">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <header class="modal-header">
@@ -201,7 +194,6 @@
       </div>
     </div>
 
-    <!-- Loading -->
     <div v-if="loading" class="loading">
       Carregando perfil...
     </div>
