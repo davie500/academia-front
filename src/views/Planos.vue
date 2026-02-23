@@ -36,6 +36,7 @@
           :nivelUsuario="nivelUsuario"
           :planoAtualNome="planoAtualNome"
           :planoPlainsMap="planoNivelMap"
+          @downgrade-requested="handleDowngrade"
         />
       </div>
     </div>
@@ -46,6 +47,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { computed } from 'vue'
+import { useToast } from 'vue-toastification'
 import PricingCard from '../components/PricingCard.vue';
 import api from '../controller/api'
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -98,7 +100,6 @@ onMounted(async () => {
   loading.value = true
 
   try {
-    // Carregar dados do usuário apenas se estiver autenticado
     if (auth.token) {
       await carregarDadosUsuario()
     }
@@ -144,7 +145,6 @@ onMounted(async () => {
 
   planos.value = Object.values(mapa)
   
-  // Mapear níveis dos planos a partir do atributo nivel ou pela ordem
   planos.value.forEach((plano, index) => {
     if (plano.nivel) {
       planoNivelMap.value[plano.nome] = plano.nivel
@@ -186,6 +186,12 @@ const planoPremium = computed(() => {
       : maisCaro
   })
 })
+
+const toast = useToast()
+
+function handleDowngrade(planoNome: string) {
+  toast.info(`Solicitação de alteração para o plano "${planoNome}" confirmada.`)
+}
 
 </script>
 

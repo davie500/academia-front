@@ -31,13 +31,14 @@ router.beforeEach((to, from, next) => {
   const auth = useAuth()
   const toast = useToast()
 
-  /** 🔐 precisa estar logado */
   if (to.meta.requiresAuth && !auth.token) {
     toast.error('Você precisa estar logado')
-    return next('/login')
+    return next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    })
   }
 
-  /** ⭐ verificação de nível */
   if (typeof to.meta.requiredLevel === 'number') {
     if ((auth.nivel ?? 0) < to.meta.requiredLevel) {
       toast.error('Seu plano não permite acessar esta página')

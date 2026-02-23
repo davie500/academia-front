@@ -69,11 +69,33 @@
           'pricing-card__button--upgrade': planoStatus.tipo === 'upgrade'
         }
       ]"
-      @click="assinarPlano"
-      :disabled="planoStatus.tipo === 'atual' || planoStatus.tipo === 'incluido'"
+      @click="handleButtonClick"
+      :disabled="planoStatus.tipo === 'atual'"
     >
       {{ planoStatus.label }}
     </button>
+
+    <!-- Modal de confirmação para planos "Incluído no Plano Atual" (estilo consistente) -->
+    <div v-if="showConfirmModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal">
+        <div class="modal__icon-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v.01" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+
+        <div class="modal__content">
+          <h2 class="modal__title">Confirmar alteração de plano</h2>
+          <p class="modal__message">Você deseja mesmo atualizar seu plano para a versão inferior? Algumas de suas funcionalidades podem parar de funcionar.</p>
+        </div>
+
+        <div class="modal__footer">
+          <button class="botao botao--secundario" @click="closeModal">Cancelar</button>
+          <button class="botao botao--danger" @click="confirmDowngrade">Ok</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -112,10 +134,14 @@ const props = withDefaults(
 )
 
 const router = useRouter()
+const emit = defineEmits<{
+  (e: 'downgrade-requested', planoNome: string): void
+}>()
 
-// Computed para determinar o estado do plano
+import { ref } from 'vue'
+const showConfirmModal = ref(false)
+
 const planoStatus = computed(() => {
-  // Se o usuário não tem plano
   if (!props.planoAtualNome) {
     return {
       tipo: 'assinar',
@@ -124,7 +150,6 @@ const planoStatus = computed(() => {
     }
   }
 
-  // Se é o plano atual do usuário
   if (props.planoAtualNome === props.plan.nome) {
     return {
       tipo: 'atual',
@@ -133,7 +158,6 @@ const planoStatus = computed(() => {
     }
   }
 
-  // Se o plano é mais caro (upgrade disponível)
   const nivelAtual = props.planoPlainsMap?.[props.planoAtualNome] || 0
   const nivelNovo = props.planoPlainsMap?.[props.plan.nome] || 0
 
@@ -145,7 +169,6 @@ const planoStatus = computed(() => {
     }
   }
 
-  // Se o plano é mais barato (downgrade - incluído no atual)
   if (nivelNovo < nivelAtual) {
     return {
       tipo: 'incluido',
@@ -162,7 +185,7 @@ const planoStatus = computed(() => {
 })
 
 function assinarPlano() {
-  const plano = props.plan.nome.toLowerCase() 
+  const plano = props.plan.nome.toLowerCase()
 
   router.push({
     path: '/pagamento',
@@ -170,6 +193,30 @@ function assinarPlano() {
       plano
     }
   })
+}
+
+function handleButtonClick() {
+  const tipo = planoStatus.value.tipo
+
+  if (tipo === 'incluido') {
+    showConfirmModal.value = true
+    return
+  }
+
+  if (tipo === 'atual') {
+    return
+  }
+
+  assinarPlano()
+}
+
+function closeModal() {
+  showConfirmModal.value = false
+}
+
+function confirmDowngrade() {
+  emit('downgrade-requested', props.plan.nome)
+  showConfirmModal.value = false
 }
 
 </script>
@@ -329,6 +376,93 @@ function assinarPlano() {
   opacity: 0.8;
   cursor: not-allowed;
 }
+
+@import '../assets/styles/variables.css';
+
+/* Modal: estilo compartilhado com outros componentes */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10001;
+  padding: 16px;
+  animation: fadeIn 0.18s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+.modal {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  max-width: 480px;
+  width: 100%;
+  padding: 28px 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: slideUp 0.26s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }
+}
+
+.modal__icon-warning {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 53, 0.08);
+  border-radius: 50%;
+  color: var(--color-primary);
+  margin-bottom: 18px;
+}
+
+.modal__icon-warning svg { width: 32px; height: 32px; }
+
+.modal__content { margin-bottom: 20px; }
+
+.modal__title {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-white);
+  margin: 0 0 8px 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.modal__message {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.modal__message strong { color: var(--color-text-white); }
+
+.modal__footer {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* Reutiliza classes de botões padrão */
+.botao { padding: 12px 24px; border: none; border-radius: 6px; font-size: var(--font-size-base); font-weight: var(--font-weight-bold); cursor: pointer; transition: var(--transition-base); display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 120px; }
+.botao:disabled { opacity: 0.6; cursor: not-allowed; }
+.botao--secundario { background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+.botao--secundario:hover:not(:disabled) { border-color: var(--color-text-primary); color: var(--color-text-white); background: rgba(255, 107, 53, 0.04); }
+.botao--danger { background: var(--color-primary); color: #071129; }
+.botao--danger:hover:not(:disabled) { background: var(--color-primary-dark); transform: translateY(-1px); }
 
 /* Responsive */
 @media (max-width: 768px) {

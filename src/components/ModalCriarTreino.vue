@@ -418,12 +418,10 @@ const gruposMusculares = computed(() => {
 const exerciciosFiltrados = computed(() => {
   let filtrados = exerciciosDisponiveis.value
   
-  // Filtro por grupo muscular
   if (grupoMuscularSelecionado.value !== 'todos') {
     filtrados = filtrados.filter(ex => ex.grupo === grupoMuscularSelecionado.value)
   }
-  
-  // Filtro por pesquisa
+
   if (pesquisaExercicio.value.trim()) {
     const termo = pesquisaExercicio.value.toLowerCase()
     filtrados = filtrados.filter(exercicio =>

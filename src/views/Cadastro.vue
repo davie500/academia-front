@@ -126,7 +126,7 @@
       <div class="login-footer">
         <p>
           Já tem uma conta?
-          <router-link :to="{ name: 'Login' }">Entrar</router-link>
+          <router-link :to="{ name: 'Login', query: { redirect: $route.query.redirect } }" class="signup"> Entrar </router-link>
         </p>
         <br>
       </div>
@@ -137,6 +137,10 @@
 <script>
 import api from '@/controller/api';
 import { useToast } from 'vue-toastification'
+import { useRouter, useRoute } from 'vue-router'
+
+  const router = useRouter()
+  const route = useRoute() 
 
 export default {
   name: 'Cadastro',
@@ -222,7 +226,7 @@ export default {
           this.acceptedTerms = false
 
           this.$nextTick(() => {
-            this.$router.push({ name: 'Login' })
+            this.$router.push({ name: 'Login', query: this.$route.query})
           })
         } catch (error) {
           const errorMsg = error.response?.data?.message || 'Erro ao registrar usuário'
@@ -700,7 +704,6 @@ input:focus {
   padding-left: 21px;
 }
 
-/* Header (match Login.vue) */
 .header {
   text-align: center;
   margin-bottom: 18px;

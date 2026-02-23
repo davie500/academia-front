@@ -158,7 +158,6 @@ function atualizarTreino(treinoAtualizado: Treino) {
 }
 
 async function excluirTreino(id: number) {
-  // Remove o treino da lista imediatamente
   const index = treinos.value.findIndex(t => t.id === id)
   if (index !== -1) {
     treinos.value.splice(index, 1)

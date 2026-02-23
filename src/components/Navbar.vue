@@ -134,7 +134,7 @@ onUnmounted(() => {
 }
 
 .navbar {
-  background-image: linear-gradient(90deg,#e53935 0%, #ff7a18 100%);
+  background-image: linear-gradient(90deg, #e53935 0%, #ff7a18 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -145,7 +145,7 @@ onUnmounted(() => {
   gap: 0;
   position: relative;
   --navbar-height: 72px;
-  z-index: 4000; 
+  z-index: 4000;
 }
 
 .navbar-brand {
@@ -192,7 +192,7 @@ onUnmounted(() => {
   padding: 0.5rem 1rem;
   border-radius: 4px;
   position: relative;
-  z-index: 1000; 
+  z-index: 1000;
   white-space: nowrap;
 }
 
@@ -244,12 +244,12 @@ onUnmounted(() => {
   height: 34px;
   padding: 4px;
   border: none;
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 3200; 
+  z-index: 3200;
   pointer-events: auto;
 }
 
@@ -276,13 +276,13 @@ onUnmounted(() => {
   height: calc(100vh - var(--navbar-height));
   width: 360px;
   max-width: 92%;
-  background: linear-gradient(180deg,#e53935 0%, #ff7a18 100%);
-  border-right: 1px solid rgba(0,0,0,0.12);
+  background: linear-gradient(180deg, #e53935 0%, #ff7a18 100%);
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
   transform: translateX(-100%);
   opacity: 0;
-  transition: transform 0.36s cubic-bezier(.2,.9,.3,1), opacity 0.28s ease;
+  transition: transform 0.36s cubic-bezier(.2, .9, .3, 1), opacity 0.28s ease;
   z-index: 3500;
-  box-shadow: 12px 0 48px rgba(0,0,0,0.28);
+  box-shadow: 12px 0 48px rgba(0, 0, 0, 0.28);
   overflow: hidden;
 }
 
@@ -332,10 +332,13 @@ onUnmounted(() => {
   cursor: not-allowed;
   justify-content: space-between;
   gap: 12px;
-  color: rgba(255,255,255,0.95);
+  color: rgba(255, 255, 255, 0.95);
 }
 
-.lock-icon{ color: rgba(255,255,255,0.92); flex:0 0 18px }
+.lock-icon {
+  color: rgba(255, 255, 255, 0.92);
+  flex: 0 0 18px
+}
 
 .side-link::before {
   display: none
@@ -396,10 +399,24 @@ onUnmounted(() => {
 }
 
 @media (max-width: 520px) {
-  .side-toggle { left: 10px; top: 10px; width:34px; height:34px }
-  .side-panel { width: 280px }
-  .side-brand { font-size: 1.6rem }
-  .side-link { font-size: 1.05rem }
+  .side-toggle {
+    left: 10px;
+    top: 10px;
+    width: 34px;
+    height: 34px
+  }
+
+  .side-panel {
+    width: 280px
+  }
+
+  .side-brand {
+    font-size: 1.6rem
+  }
+
+  .side-link {
+    font-size: 1.05rem
+  }
 }
 
 .login-wrap {
@@ -434,12 +451,12 @@ onUnmounted(() => {
 }
 
 .auth-btn--login {
-  background: linear-gradient(135deg, #ff6b35 0%, #ff5722 100%);
+  background: rgba(255, 255, 255, 0.12);
   border: none;
 }
 
 .auth-btn--login:hover {
-  background: linear-gradient(135deg, #ff7a4a 0%, #ff6633 100%);
+  background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
   transform: translateY(-2px);
 }
@@ -483,11 +500,11 @@ onUnmounted(() => {
   right: 0;
   top: var(--navbar-height);
   bottom: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   transition: opacity 0.28s ease, background 0.28s ease;
-  z-index: 3000; 
+  z-index: 3000;
 }
 
 .side-panel.open .side-link {
@@ -526,8 +543,18 @@ onUnmounted(() => {
 }
 
 @media (max-width: 520px) {
-  .side-toggle { left: 12px; width:44px; height:44px }
-  .side-panel { width: 260px }
-  .side-home { font-size: 1.6rem }
+  .side-toggle {
+    left: 12px;
+    width: 44px;
+    height: 44px
+  }
+
+  .side-panel {
+    width: 260px
+  }
+
+  .side-home {
+    font-size: 1.6rem
+  }
 }
 </style>
