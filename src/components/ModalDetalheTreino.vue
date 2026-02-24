@@ -52,9 +52,9 @@
 
       <div class="modal__footer">
         <div class="modal__footer-left">
-          <button class="botao botao--danger" @click="excluirTreino" :disabled="loading">
+          <button class="botao botao--danger" @click="mostrarConfirmacao = true" :disabled="loading">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon-small">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
             Excluir
           </button>
@@ -71,9 +71,20 @@
       </div>
     </div>
   </div>
+
+  <ModalConfirmarExclusao
+    v-if="mostrarConfirmacao"
+    :id="treino.id"
+    :titulo="treino.nome"
+    @fechar="mostrarConfirmacao = false"
+    @confirmado="handleExclusaoConfirmada"
+  />
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import ModalConfirmarExclusao from './ModalConfirmarExclusao.vue'
+
 interface PivotData {
   series: number
   repeticoes: number
@@ -94,9 +105,6 @@ interface Treino {
   exercicios: Exercicio[]
 }
 
-import { ref } from 'vue'
-import api from '../controller/api'
-
 const props = defineProps<{
   treino: Treino
 }>()
@@ -108,6 +116,7 @@ const emit = defineEmits<{
 }>()
 
 const loading = ref(false)
+const mostrarConfirmacao = ref(false)
 
 function fechar() {
   if (!loading.value) emit('fechar')
@@ -118,23 +127,9 @@ function editarTreino() {
   fechar()
 }
 
-async function excluirTreino() {
-  if (loading.value) return
-
-  const ok = window.confirm('Deseja realmente excluir este treino? Esta ação não pode ser desfeita.')
-  if (!ok) return
-
-  loading.value = true
-  try {
-    await api.delete(`/treinos/${props.treino.id}`)
-    emit('treino-excluido', props.treino.id)
-    fechar()
-  } catch (error) {
-    console.error('Erro ao excluir treino:', error)
-    alert('Não foi possível excluir o treino. Tente novamente.')
-  } finally {
-    loading.value = false
-  }
+function handleExclusaoConfirmada() {
+  emit('treino-excluido', props.treino.id)
+  fechar()
 }
 </script>
 

@@ -44,7 +44,7 @@
         </form>
 
         <div class="card-footer">
-          <p>Não tem uma conta? <router-link to="/cadastro" class="signup">Cadastre-se</router-link></p>
+          <p>Não tem uma conta? <router-link :to="{ name: 'Cadastro', query: { redirect: route.query.redirect } }" class="signup"> Cadastre-se </router-link></p>
         </div>
       </div>
     </div>
@@ -53,7 +53,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/stores/auth.js'
@@ -66,6 +66,7 @@ const showPassword = ref(false)
 const isLoading = ref(false)
 
 const router = useRouter()
+const route = useRoute() 
 const toast = useToast()
 
 function togglePassword() {
@@ -87,8 +88,8 @@ async function handleLogin() {
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
 
       toast.success('Login realizado com sucesso 🚀')
-
-      router.push('/')
+      const redirect = route.query.redirect || '/'
+      router.push(redirect)
     } else {
       toast.error('Email ou senha incorretos')
     }

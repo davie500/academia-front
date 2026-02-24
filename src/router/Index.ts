@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/stores/auth'
+
 import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
 import Planos from '../views/Planos.vue'
@@ -25,19 +26,29 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
-});
+  routes
+})
 
 router.beforeEach((to, from, next) => {
   const auth = useAuth()
+  const toast = useToast()
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    const toast = useToast()
+  if (to.meta.requiresAuth && !auth.token) {
     toast.error('Você precisa estar logado')
-    next('/login')
-  } else {
-    next()
+    return next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    })
   }
+
+  if (typeof to.meta.requiredLevel === 'number') {
+    if ((auth.nivel ?? 0) < to.meta.requiredLevel) {
+      toast.error('Seu plano não permite acessar esta página')
+      return next('/planos')
+    }
+  }
+
+  next()
 })
 
-export default router;
+export default router

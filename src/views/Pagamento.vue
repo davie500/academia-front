@@ -25,7 +25,7 @@
                 @click="periodo = 'mensal'"
               >
                 <div class="rotulo">Mensal</div>
-                <div class="valor">{{ formatar(precos[planoSelecionado].mensal.preco) }}</div>
+                <div class="valor">{{ formatar(precos[planoSelecionado].mensal.preco || 0) }}</div>
                 <div class="descricao">por mês</div>
               </button>
 
@@ -34,7 +34,7 @@
                 @click="periodo = 'anual'"
               >
                 <div class="rotulo">Anual</div>
-                <div class="valor">{{ formatar(precos[planoSelecionado].anual.preco) }}</div>
+                <div class="valor">{{ formatar(precos[planoSelecionado].anual.preco || 0) }}</div>
                 <div class="descricao">por ano</div>
                 <span v-if="periodo === 'anual'" class="selo">Economize</span>
               </button>
@@ -492,9 +492,9 @@ onBeforeUnmount(async () => {
 
 .opcao-periodo {
   position: relative;
-  min-height: 92px;
+  min-height: 100px;
   flex: 1;
-  padding: 18px 22px;
+  padding: 20px 22px;
   text-align: center;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -502,7 +502,8 @@ onBeforeUnmount(async () => {
   color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
 .opcao-periodo .rotulo {
@@ -511,15 +512,17 @@ onBeforeUnmount(async () => {
 }
 
 .opcao-periodo .valor {
-  margin-top: 6px;
-  font-size: 18px;
+  margin-top: 0;
+  font-size: 20px;
   font-weight: 800;
   color: var(--color-primary);
+  line-height: 1;
 }
 
 .opcao-periodo .descricao {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-secondary);
+  margin-top: 12px;
 }
 
 .opcao-periodo .selo {
