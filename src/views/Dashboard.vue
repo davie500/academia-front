@@ -1,4 +1,5 @@
 <template>
+    <div class="fundo"></div>
     <div class="container">
         <h1 class="titulo">Transforme Seu Corpo</h1>
         <h1 class="titulo cores">Alcance Sem Limites</h1>
@@ -24,6 +25,16 @@
     filter: brightness(0.5);
     backdrop-filter: blur(5px);
 }
+
+.fundo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2); 
+  backdrop-filter: blur(5px);      
+}
+
+
 .titulo {
     color: white;
     text-align: center;

@@ -1,4 +1,5 @@
 <template>
+  <div class="fundo"></div>
   <div class="page">
     <div class="container" v-if="!loading && usuario">
 
@@ -301,7 +302,28 @@ async function saveInlineEdit() {
   padding: 40px 20px;
   font-family: 'Segoe UI', sans-serif;
   color: var(--color-text-white);
-  background: linear-gradient(180deg, var(--color-bg-dark), var(--color-bg-darker));
+}
+
+.fundo {
+    width: 100%;
+    height: 100vh;
+    background-image: url('/assets/fundo.png');
+    object-fit: cover;
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    filter: brightness(0.5);
+    backdrop-filter: blur(5px);
+}
+
+.fundo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2); 
+  backdrop-filter: blur(5px);      
 }
 
 .container {
