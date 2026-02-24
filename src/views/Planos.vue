@@ -62,6 +62,7 @@ const planos = ref<PlanoAgrupado[]>([
 const loading = ref(false);
 const nivelUsuario = ref<string>('');
 const planoAtualNome = ref<string>('');
+const planoAtualStatus = ref<string>('');
 const planoNivelMap = ref<Record<string, number>>({});
 
 interface Vantagem {
@@ -162,10 +163,20 @@ onMounted(async () => {
 async function carregarDadosUsuario() {
   try {
     const response = await api.get('/auth/me')
-    if (response.data.assinatura?.plano?.nivel?.nome) {
-      nivelUsuario.value = response.data.assinatura.plano.nivel.nome
-      planoAtualNome.value = response.data.assinatura.plano.nome
+    const assinatura = response.data.assinatura
+    planoAtualStatus.value = assinatura?.status || ''
+    if (assinatura && assinatura.status === 'active' && assinatura.plano?.nivel?.nome) {
+      nivelUsuario.value = assinatura.plano.nivel.nome
+      planoAtualNome.value = assinatura.plano.nome
+    } else {
+      nivelUsuario.value = ''
+      planoAtualNome.value = ''
     }
+    console.log('Dados do usuário carregados:', {
+      nivel: nivelUsuario.value,
+      plano: planoAtualNome.value,
+      status: planoAtualStatus.value
+    })
   } catch (error) {
     console.error('Erro ao carregar dados do usuário:', error)
   }
@@ -268,7 +279,6 @@ function handleDowngrade(planoNome: string) {
   margin: 0;
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
   .planos-grid {
     grid-template-columns: 1fr;

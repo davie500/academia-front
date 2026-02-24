@@ -75,7 +75,6 @@
       {{ planoStatus.label }}
     </button>
 
-    <!-- Modal de confirmação para planos "Incluído no Plano Atual" (estilo consistente) -->
     <div v-if="showConfirmModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
         <div class="modal__icon-warning">
@@ -328,6 +327,7 @@ function confirmDowngrade() {
   color: white;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-top: auto;
 }
 
 .pricing-card__button:hover {
@@ -379,7 +379,6 @@ function confirmDowngrade() {
 
 @import '../assets/styles/variables.css';
 
-/* Modal: estilo compartilhado com outros componentes */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -393,7 +392,13 @@ function confirmDowngrade() {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; } to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
@@ -412,7 +417,15 @@ function confirmDowngrade() {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal__icon-warning {
@@ -427,9 +440,14 @@ function confirmDowngrade() {
   margin-bottom: 18px;
 }
 
-.modal__icon-warning svg { width: 32px; height: 32px; }
+.modal__icon-warning svg {
+  width: 32px;
+  height: 32px;
+}
 
-.modal__content { margin-bottom: 20px; }
+.modal__content {
+  margin-bottom: 20px;
+}
 
 .modal__title {
   font-size: var(--font-size-lg);
@@ -445,7 +463,9 @@ function confirmDowngrade() {
   line-height: 1.6;
 }
 
-.modal__message strong { color: var(--color-text-white); }
+.modal__message strong {
+  color: var(--color-text-white);
+}
 
 .modal__footer {
   display: flex;
@@ -456,15 +476,48 @@ function confirmDowngrade() {
   margin-top: 8px;
 }
 
-/* Reutiliza classes de botões padrão */
-.botao { padding: 12px 24px; border: none; border-radius: 6px; font-size: var(--font-size-base); font-weight: var(--font-weight-bold); cursor: pointer; transition: var(--transition-base); display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 120px; }
-.botao:disabled { opacity: 0.6; cursor: not-allowed; }
-.botao--secundario { background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); }
-.botao--secundario:hover:not(:disabled) { border-color: var(--color-text-primary); color: var(--color-text-white); background: rgba(255, 107, 53, 0.04); }
-.botao--danger { background: var(--color-primary); color: #071129; }
-.botao--danger:hover:not(:disabled) { background: var(--color-primary-dark); transform: translateY(-1px); }
+.botao {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
+}
 
-/* Responsive */
+.botao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.botao--secundario {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.botao--secundario:hover:not(:disabled) {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-white);
+  background: rgba(255, 107, 53, 0.04);
+}
+
+.botao--danger {
+  background: var(--color-primary);
+  color: #071129;
+}
+
+.botao--danger:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
   .pricing-card {
     padding: 24px;

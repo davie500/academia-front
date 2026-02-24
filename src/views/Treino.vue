@@ -60,6 +60,10 @@
 
   <ModalCriarTreino
     v-if="mostrarModalCriar"
+    :treinos-premontados="treinosPremontados"
+    :exercicios-disponiveis="exerciciosDisponiveis"
+    :carregando-treinos="carregandoTreinos"
+    :carregando-exercicios="carregandoExercicios"
     @fechar="fecharModalCriar"
     @treino-criado="adicionarTreino"
   />
@@ -103,6 +107,12 @@ const mostrarModalDetalhes = ref(false)
 const treinoSelecionado = ref<Treino | null>(null)
 const usuarioId = ref<number | null>(null)
 
+// Dados pré-carregados para criar treinos (antes carregados no modal)
+const treinosPremontados = ref<any[]>([])
+const exerciciosDisponiveis = ref<any[]>([])
+const carregandoTreinos = ref(true)
+const carregandoExercicios = ref(true)
+
 const treinosUsuario = computed(() => {
   return treinos.value.filter(treino => {
     const id = treino.usuario_id ?? treino.usuarioId
@@ -112,7 +122,33 @@ const treinosUsuario = computed(() => {
 
 onMounted(async () => {
   await carregarTreinos()
+  await carregarTreinosPremontados()
+  await carregarExercicios()
 })
+
+async function carregarTreinosPremontados() {
+  carregandoTreinos.value = true
+  try {
+    const response = await api.get('/treinos?publicos=true')
+    treinosPremontados.value = response.data
+  } catch (error) {
+    console.error('Erro ao carregar treinos pré-montados:', error)
+  } finally {
+    carregandoTreinos.value = false
+  }
+}
+
+async function carregarExercicios() {
+  carregandoExercicios.value = true
+  try {
+    const response = await api.get('/exercicios')
+    exerciciosDisponiveis.value = response.data
+  } catch (error) {
+    console.error('Erro ao carregar exercícios:', error)
+  } finally {
+    carregandoExercicios.value = false
+  }
+}
 
 async function carregarTreinos() {
   loading.value = true

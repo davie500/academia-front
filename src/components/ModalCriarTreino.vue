@@ -360,22 +360,29 @@ interface NovoExercicio {
   repeticoes: number
 }
 
+const props = defineProps<{
+  treinosPremontados?: TreinoPremontado[]
+  exerciciosDisponiveis?: ExercicioBanco[]
+  carregandoTreinos?: boolean
+  carregandoExercicios?: boolean
+}>()
+
 const emit = defineEmits<{
   fechar: []
   'treino-criado': [treino: any]
 }>()
 
 const tipoSelecionado = ref<'pre-montado' | 'personalizado' | null>(null)
-const treinosPremontados = ref<TreinoPremontado[]>([])
+const treinosPremontados = computed(() => props.treinosPremontados ?? [])
 const treinoSelecionado = ref<TreinoPremontado | null>(null)
 const carregandoDetalhes = ref(false)
-const carregandoTreinos = ref(true)
-const carregandoExercicios = ref(true)
+const carregandoTreinos = computed(() => props.carregandoTreinos ?? true)
+const carregandoExercicios = computed(() => props.carregandoExercicios ?? true)
 const isSalvando = ref(false)
 const usuarioId = ref<number | null>(null)
 const nivelUsuario = ref<number>(0)
 const pesquisaTreino = ref('')
-const exerciciosDisponiveis = ref<ExercicioBanco[]>([])
+const exerciciosDisponiveis = computed(() => props.exerciciosDisponiveis ?? [])
 const grupoMuscularSelecionado = ref<string>('todos')
 const pesquisaExercicio = ref('')
 const mostraDropdownExercicio = ref(false)
@@ -439,8 +446,6 @@ const carregandoInicial = computed(() => {
 
 onMounted(async () => {
   await carregarUsuarioId()
-  await carregarTreinosPremontados()
-  await carregarExercicios()
   console.log(nivelUsuario.value)
 })
 
@@ -455,29 +460,7 @@ async function carregarUsuarioId() {
   }
 }
 
-async function carregarTreinosPremontados() {
-  carregandoTreinos.value = true
-  try {
-    const response = await api.get('/treinos?publicos=true')
-    treinosPremontados.value = response.data
-  } catch (error) {
-    console.error('Erro ao carregar treinos pré-montados:', error)
-  } finally {
-    carregandoTreinos.value = false
-  }
-}
-
-async function carregarExercicios() {
-  carregandoExercicios.value = true
-  try {
-    const response = await api.get('/exercicios')
-    exerciciosDisponiveis.value = response.data
-  } catch (error) {
-    console.error('Erro ao carregar exercícios:', error)
-  } finally {
-    carregandoExercicios.value = false
-  }
-}
+// Note: carregamento de treinos pré-montados e exercícios agora é realizado pela página principal `Treino.vue`.
 
 function selecionarTipo(tipo: 'pre-montado' | 'personalizado') {
   tipoSelecionado.value = tipo
