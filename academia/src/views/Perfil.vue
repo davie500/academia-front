@@ -2,11 +2,10 @@
   <div class="page">
     <div class="container" v-if="!loading && usuario">
 
-      
       <div class="card profile-card">
         <div class="profile-left">
           <div class="avatar-wrapper">
-            <img
+              <img
               v-if="usuario.foto_perfil"
               :src="`data:image/webp;base64,${usuario.foto_perfil}`"
               class="avatar"
@@ -17,30 +16,50 @@
               class="avatar"
             />
           </div>
+            <div class="avatar-actions">
+              <label class="file-label">
+                <input type="file" @change="handleFileUpload" accept="image/*" />
+                <span class="file-text">Escolher foto</span>
+              </label>
+              <div class="file-info" v-if="edit.foto_perfil">
+                <span class="file-ok">✓</span>
+                <span class="file-name">{{ edit.foto_perfil.name }}</span>
+              </div>
+            </div>
 
-          <h2 class="name">{{ usuario.nome }}</h2>
-          <p class="email">{{ usuario.email }}</p>
+            <div class="left-selects">
+              <div class="left-select">
+                <label>Gênero</label>
+                <select v-model="edit.genero">
+                  <option value="masculino">Masculino</option>
+                  <option value="feminino">Feminino</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
 
-          <div class="badges">
-            <select
-              class="badge badge-select"
-              v-model="nivelSelecionado"
-              @change="trocarNivelTreino(nivelSelecionado)"
-            >
-              <option
-                v-for="nivel in niveisTreino"
-                :key="nivel"
-                :value="nivel"
-              >
-                {{ nivel }}
-              </option>
-            </select>
-             
-            <span class="badge outlined">
+              <div class="left-select">
+                <label>Nível de Treino</label>
+                <select v-model="edit.nivel_treino">
+                  <option value="iniciante">Iniciante</option>
+                  <option value="intermediario">Intermediário</option>
+                  <option value="avancado">Avançado</option>
+                </select>
+              </div>
+            </div>
+
+            <input class="name-edit" v-model="edit.nome" type="text" />
+            <input class="email-edit" v-model="edit.email" type="email" />
+
+          <div class="badges" v-if="(usuario.nivel_treino || usuario.objetivo || usuario.genero)">
+            <span v-if="usuario.nivel_treino" class="badge filled">
+              {{ usuario.nivel_treino }}
+            </span>
+
+            <span v-if="usuario.objetivo" class="badge outlined">
               {{ usuario.objetivo }}
             </span>
-             
-            <span class="badge outlined">
+
+            <span v-if="usuario.genero" class="badge outlined">
               {{ usuario.genero }}
             </span>
           </div>
@@ -51,45 +70,32 @@
 
           <div class="form-group">
             <label>Altura</label>
-            <input
-              type="text"
-              :value="usuario.altura_cm + ' cm'"
-              readonly
-            />
+            <input v-model="edit.altura_cm" type="text" :placeholder="usuario.altura_cm ? '' : 'Você ainda não colocou este valor'" />
           </div>
 
           <div class="form-group">
             <label>Peso</label>
-            <input
-              type="text"
-              :value="usuario.peso_kg + ' kg'"
-              readonly
-            />
+            <input v-model="edit.peso_kg" type="text" :placeholder="usuario.peso_kg ? '' : 'Você ainda não colocou este valor'" />
           </div>
 
           <div class="form-group">
             <label>Data de Nascimento</label>
-            <input
-              type="text"
-              :value="formatarData(usuario.data_nascimento)"
-              readonly
-            />
+            <input v-model="edit.data_nascimento" type="date" :placeholder="usuario.data_nascimento ? '' : 'Você ainda não colocou este valor'" />
           </div>
 
           <div class="form-group">
             <label>Objetivo</label>
-            <input
-              type="text"
-              :value="usuario.objetivo"
-              readonly
-            />
+            <select v-model="edit.objetivo">
+              <option disabled value="">{{ usuario.objetivo || '—' }}</option>
+              <option value="Emagrecimento">Emagrecimento</option>
+              <option value="Hipertrofia">Hipertrofia</option>
+              <option value="Condicionamento">Condicionamento</option>
+            </select>
           </div>
 
           <div class="form-group">
             <label>Observações</label>
-            <textarea readonly>
-{{ usuario.observacoes }}
-            </textarea>
+            <textarea v-model="edit.observacoes" :placeholder="usuario.observacoes ? '' : 'Você ainda não colocou este valor'"></textarea>
           </div>
         </div>
       </div>
@@ -138,80 +144,18 @@
         </template>
       </div>
 
-     
       <div class="bottom-buttons">
-        <button class="btn-primary large" @click="openEdit">
-          Editar Perfil
-        </button>
-
-        
+        <template v-if="hasChanges">
+          <button class="btn-outline large" @click="cancelInlineEdit">Cancelar</button>
+          <button class="btn-primary large" :disabled="!hasChanges || isSaving" @click="saveInlineEdit">
+            <span v-if="isSaving">Salvando...</span>
+            <span v-else>Salvar mudanças</span>
+          </button>
+        </template>
       </div>
 
     </div>
 
-
-    <div v-if="isEditOpen" class="modal-backdrop" @click.self="closeEdit">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <header class="modal-header">
-          <h4 id="modal-title">Editar Perfil</h4>
-          <button class="close" @click="closeEdit" aria-label="Fechar">×</button>
-        </header>
-
-        <form class="modal-body" @submit.prevent="saveEdit">
-          <div class="form-grid">
-            <label>Nome
-              <input v-model="edit.nome" type="text" />
-            </label>
-
-            <label>Email
-              <input v-model="edit.email" type="email" />
-            </label>
-
-            <label>Gênero
-              <select v-model="edit.genero">
-                <option value="Masculino">Masculino</option>
-                <option value="Feminino">Feminino</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </label>
-
-            <label>Nível de Treino
-              <select v-model="edit.nivel_treino">
-                <option value="Iniciante">Iniciante</option>
-                <option value="Intermediário">Intermediário</option>
-                <option value="Profissional">Profissional</option>
-              </select>
-            </label>
-
-            <label>Altura (cm)
-              <input v-model="edit.altura_cm" type="text" />
-            </label>
-
-            <label>Peso (kg)
-              <input v-model="edit.peso_kg" type="text" />
-            </label>
-
-            <label>Data de Nascimento
-              <input v-model="edit.data_nascimento" type="date" />
-            </label>
-
-            <label>Objetivo
-              <input v-model="edit.objetivo" type="text" />
-            </label>
-
-            <label class="full">Observações
-              <textarea v-model="edit.observacoes" rows="4"></textarea>
-            </label>
-          </div>
-
-          <footer class="modal-actions">
-            <button type="submit" class="btn-primary">Salvar</button>
-          </footer>
-        </form>
-      </div>
-    </div>
-
-  
     <div v-if="loading" class="loading">
       Carregando perfil...
     </div>
@@ -227,10 +171,35 @@ const toast = useToast()
 
 const usuario = ref(null)
 const loading = ref(true)
-const isEditOpen = ref(false)
-const edit = reactive({})
-const nivelSelecionado = ref("Iniciante")
-const niveisTreino = ["Iniciante", "Intermediário", "Profissional"]
+const isSaving = ref(false)
+const edit = reactive({
+  nome: '',
+  email: '',
+  altura_cm: '',
+  peso_kg: '',
+  data_nascimento: '',
+  objetivo: '',
+  observacoes: '',
+  nivel_treino: '',
+  genero: '',
+  foto_perfil: null
+})
+
+const hasChanges = computed(() => {
+  if (!usuario.value) return false
+  const fields = ['nome','email','altura_cm','peso_kg','data_nascimento','objetivo','observacoes','nivel_treino','genero']
+  for (const f of fields) {
+    const a = (usuario.value[f] ?? '') || ''
+    const b = (edit[f] ?? '') || ''
+    if (f === 'objetivo') {
+      if (b !== '' && String(a) !== String(b)) return true
+      continue
+    }
+    if (String(a) !== String(b)) return true
+  }
+  if (edit.foto_perfil) return true
+  return false
+})
 
 const planoQuery = computed(() => {
   const nome = String(usuario.value?.assinatura?.plano?.nome || '').toLowerCase()
@@ -240,14 +209,16 @@ const planoQuery = computed(() => {
 
 function formatarData(data) {
   if (!data) return ""
-  return new Date(data).toLocaleDateString("pt-BR")
+
+  const [ano, mes, dia] = data.split('T')[0].split('-')
+  return `${dia}/${mes}/${ano}`
 }
 
 onMounted(async () => {
   try {
     const response = await api.get("/auth/me")
     usuario.value = response.data
-    nivelSelecionado.value = usuario.value?.nivel_treino || "Iniciante"
+    syncEditFromUsuario()
     console.log("Usuário carregado:", usuario.value)
   } catch (error) {
     console.error("Erro ao buscar usuário:", error)
@@ -256,25 +227,34 @@ onMounted(async () => {
   }
 })
 
-function openEdit() {
+function syncEditFromUsuario() {
   if (!usuario.value) return
-  edit.nome = usuario.value.nome
-  edit.email = usuario.value.email
-  edit.altura_cm = usuario.value.altura_cm
-  edit.peso_kg = usuario.value.peso_kg
+  edit.nome = usuario.value.nome || ''
+  edit.email = usuario.value.email || ''
+  edit.altura_cm = usuario.value.altura_cm || ''
+  edit.peso_kg = usuario.value.peso_kg || ''
   edit.data_nascimento = usuario.value.data_nascimento ? usuario.value.data_nascimento.split('T')[0] : ''
-  edit.objetivo = usuario.value.objetivo
-  edit.observacoes = usuario.value.observacoes
-  edit.nivel_treino = usuario.value.nivel_treino
-  edit.genero = usuario.value.genero
-  isEditOpen.value = true
+  edit.objetivo = ''
+  edit.observacoes = usuario.value.observacoes || ''
+  edit.nivel_treino = usuario.value.nivel_treino || ''
+  edit.genero = usuario.value.genero || ''
+  edit.foto_perfil = null
 }
 
-function closeEdit() {
-  isEditOpen.value = false
+function cancelInlineEdit() {
+  syncEditFromUsuario()
+  edit.foto_perfil = null
 }
 
-async function saveEdit() {
+function handleFileUpload(event) {
+  const file = event.target.files[0]
+  if (file) {
+    edit.foto_perfil = file
+  }
+}
+
+async function saveInlineEdit() {
+  isSaving.value = true
   try {
     const formData = new FormData()
 
@@ -284,7 +264,7 @@ async function saveEdit() {
     formData.append('altura_cm', edit.altura_cm)
     formData.append('peso_kg', edit.peso_kg)
     formData.append('data_nascimento', edit.data_nascimento)
-    formData.append('objetivo', edit.objetivo)
+    formData.append('objetivo', edit.objetivo || usuario.value.objetivo || '')
     formData.append('nivel_treino', edit.nivel_treino || '')
     formData.append('genero', edit.genero || '')
     formData.append('observacoes', edit.observacoes)
@@ -297,98 +277,79 @@ async function saveEdit() {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-  
     const response = await api.get("/auth/me")
     usuario.value = response.data
-    nivelSelecionado.value = usuario.value?.nivel_treino || "Iniciante"
 
     toast.success('Perfil atualizado com sucesso')
-    isEditOpen.value = false
+    syncEditFromUsuario()
+    edit.foto_perfil = null
 
   } catch (err) {
     console.error('Erro ao salvar perfil', err)
     toast.error('Erro ao salvar perfil')
+  } finally {
+    isSaving.value = false
   }
 }
-
-async function trocarNivelTreino(novoNivel) {
-  if (!usuario.value || !novoNivel) return
-
-  try {
-    const formData = new FormData()
-
-    formData.append("_method", "PUT")
-    formData.append("nome", usuario.value.nome || "")
-    formData.append("email", usuario.value.email || "")
-    formData.append("altura_cm", usuario.value.altura_cm || "")
-    formData.append("peso_kg", usuario.value.peso_kg || "")
-    formData.append("data_nascimento", usuario.value.data_nascimento ? usuario.value.data_nascimento.split("T")[0] : "")
-    formData.append("objetivo", usuario.value.objetivo || "")
-    formData.append("nivel_treino", novoNivel)
-    formData.append("genero", usuario.value.genero || "")
-    formData.append("observacoes", usuario.value.observacoes || "")
-
-    await api.post("/usuarios/" + usuario.value.id, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    })
-
-    usuario.value.nivel_treino = novoNivel 
-    nivelSelecionado.value = novoNivel
-    toast.success("Nível de treino atualizado")
-  } catch (err) {
-    console.error("Erro ao atualizar ní­vel de treino", err)
-    toast.error("Erro ao atualizar ní­vel de treino")
-  }
-}
-
 </script>
 
 <style scoped>
 .page {
   min-height: 100vh;
-  background: radial-gradient(circle at 20% 30%, #0f1a2e, #05070f 70%);
   display: flex;
   justify-content: center;
   padding: 40px 20px;
   font-family: 'Segoe UI', sans-serif;
-  color: #fff;
+  color: var(--color-text-white);
+  background: linear-gradient(180deg, var(--color-bg-dark), var(--color-bg-darker));
 }
 
 .container {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1100px
 }
 
 .card {
-  background: linear-gradient(145deg, #0e1220, #0a0f1c);
-  border-radius: 20px;
-  padding: 30px;
-  margin-bottom: 40px;
-  border: 1px solid #ff5a1f55;
-  box-shadow: 0 0 25px rgba(255, 90, 31, 0.15);
+  background: linear-gradient(145deg, var(--color-bg-card), rgba(26, 31, 46, 0.95));
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(75, 85, 99, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  transition: transform .18s ease, box-shadow .18s ease
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7)
 }
 
 .profile-card {
   display: flex;
-  justify-content: space-between;
-  gap: 40px;
+  gap: 24px;
+  align-items: flex-start
 }
 
 .profile-left {
-  width: 35%;
+  width: 34%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px 6px
 }
 
 .profile-right {
-  width: 65%;
+  width: 66%
 }
 
 .avatar-wrapper {
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  padding: 3px;
-  background: linear-gradient(45deg, #ff5a1f, #ff8a3d);
-  margin-bottom: 20px;
+  padding: 4px;
+  background: linear-gradient(45deg, var(--color-primary), var(--color-primary-dark));
+  margin-bottom: 16px
 }
 
 .avatar {
@@ -396,229 +357,363 @@ async function trocarNivelTreino(novoNivel) {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  display: block
 }
 
-.name {
-  font-size: 20px;
-  margin-bottom: 5px;
+.avatar-actions {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px
 }
 
-.email {
-  color: #aaa;
+.file-label input {
+  display: none
+}
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  color: var(--color-text-white);
+  cursor: pointer;
   font-size: 14px;
-  margin-bottom: 20px;
+  transition: all .18s ease
+}
+
+.file-label:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.08)
+}
+
+.file-info {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px
+}
+
+.file-ok {
+  color: #00d26a;
+  font-weight: 600
+}
+
+.file-name {
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+
+.left-selects {
+  width: 100%;
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start
+}
+
+.left-select {
+  width: 100%;
+  max-width: 280px
+}
+
+.left-select label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-bottom: 6px;
+  display: block
+}
+
+.left-select select {
+  width: 100%;
+  padding: 10px 12px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-white);
+  transition: box-shadow .18s ease, border-color .12s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: dark;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.03) 50%), linear-gradient(135deg, rgba(0,0,0,0.02) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 40px;
+}
+
+.left-select select:hover {
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.03)
+}
+
+.left-select select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 22px rgba(255, 107, 53, 0.12)
+}
+
+.name-edit,
+.email-edit,
+input[type="text"],
+input[type="email"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-white);
+  font-size: 14px;
+  transition: box-shadow .15s ease, transform .12s ease
+}
+
+.name-edit,
+.email-edit {
+  max-width: 280px;
+  margin-top: 12px
+}
+
+.name-edit:focus,
+.email-edit:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 6px 22px rgba(255, 107, 53, 0.15);
+  border-color: var(--color-primary);
+  transform: translateY(-1px)
 }
 
 .badges {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.badge {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-}
-
-.badge.filled {
-  background: #ff5a1f;
-  color: white;
-}
-
-.badge-select {
-  background: #ff5a1f;
-  color: white;
-  border: 0;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 28px;
-  background-image: linear-gradient(45deg, transparent 50%, #fff 50%), linear-gradient(135deg, #fff 50%, transparent 50%);
-  background-position: calc(100% - 15px) calc(50% - 2px), calc(100% - 10px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-}
-
-.badge.outlined {
-  border: 1px solid #ff5a1f;
-  color: #ff5a1f;
+  display: none;
 }
 
 .profile-right h3 {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  font-size: 18px;
+  color: var(--color-text-white)
 }
 
 .form-group {
   margin-bottom: 18px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column
 }
 
 label {
   font-size: 13px;
-  color: #aaa;
-  margin-bottom: 6px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px
 }
 
 input,
 textarea {
-  background: #111627;
-  border: 1px solid #333a50;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  padding: 10px;
-  color: white;
+  padding: 10px 12px;
+  color: var(--color-text-white);
   font-size: 14px;
+  box-sizing: border-box
 }
 
 textarea {
-  resize: none;
-  height: 70px;
+  resize: vertical;
+  height: 110px;
+  padding-top: 12px
 }
 
 .plan-card {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, var(--color-bg-card), rgba(26, 31, 46, 0.95));
+  border: 1px solid rgba(255, 107, 53, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  transition: transform .18s ease, box-shadow .18s ease
 }
 
-.plan-left { flex: 1 1 auto }
-.plan-right { display:flex;gap:12px;align-items:center }
+.plan-left h2 {
+  font-size: 20px;
+  margin: 0 0 6px 0;
+  color: var(--color-text-white)
+}
 
-.plan-right .btn-primary { margin: 0 }
-.plan-right .btn-outline { background:transparent }
-
-.plan-header {
+.plan-right {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  gap: 12px;
+  align-items: center
 }
 
 .status {
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 12px
 }
 
 .status.active {
-  background: #1f3b2b;
+  background: rgba(0, 210, 106, 0.08);
   color: #00d26a;
-  margin-top: 8px;
-  display: inline-block;
+  display: inline-block
 }
 
 .status.orange {
-  background: #ff5a1f;
-  color: white;
+  background: var(--color-primary);
+  color: white
 }
 
 .validity {
-  color: #aaa;
-  margin-top: 8px;
+  color: var(--color-text-primary);
+  margin-top: 8px
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, #ff5a1f, #ff8a3d);
+  background: linear-gradient(45deg, var(--color-primary), var(--color-primary-dark));
   border: none;
-  color: white;
-  padding: 10px 25px;
-  border-radius: 30px;
+  color: var(--color-text-white);
+  padding: 10px 22px;
+  border-radius: 28px;
   cursor: pointer;
-  margin-top: 20px;
-  transition: 0.3s;
+  transition: transform .12s ease, box-shadow .12s ease
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255, 107, 53, 0.12)
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none
 }
 
 .btn-outline {
   background: transparent;
-  border: 1px solid #ff5a1f;
-  color: #ff5a1f;
-  padding: 10px 25px;
-  border-radius: 30px;
+  border: 1px solid rgba(255, 107, 53, 0.9);
+  color: var(--color-primary);
+  padding: 10px 22px;
+  border-radius: 28px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: background .12s ease, color .12s ease
 }
 
 .btn-outline:hover {
-  background: #ff5a1f;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-text-white)
 }
 
 .large {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   font-size: 15px;
+  border-radius: 28px
 }
 
 .bottom-buttons {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  align-items: center;
+  margin-top: 8px
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px
+}
+
+.badge.filled {
+  background: var(--color-primary);
+  color: var(--color-text-white);
+  border: 1px solid rgba(255, 107, 53, 0.1)
+}
+
+.badge.outlined {
+  border: 1px solid rgba(255, 107, 53, 0.14);
+  color: var(--color-text-primary);
+  background: transparent
 }
 
 .loading {
-  color: white;
+  color: var(--color-text-white);
   font-size: 18px;
   text-align: center;
-  margin-top: 100px;
+  margin-top: 100px
 }
 
-@media (max-width: 900px) {
+select,
+option {
+  background: var(--color-bg-card);
+  color: var(--color-text-white)
+}
+
+select::-ms-expand {
+  display: none
+}
+
+select:focus,
+select:hover {
+  color: var(--color-text-white)
+}
+
+select option {
+  background: var(--color-bg-card);
+  color: var(--color-text-white);
+}
+
+@media (max-width:900px) {
   .profile-card {
-    flex-direction: column;
+    flex-direction: column
   }
 
   .profile-left,
   .profile-right {
-    width: 100%;
+    width: 100%
+  }
+
+  .profile-left {
+    align-items: center;
+    text-align: center;
+    
+  }
+
+  .left-selects {
+    align-items: center
+  }
+
+  .name-edit,
+  .email-edit {
+    max-width: 100%
   }
 
   .bottom-buttons {
-    flex-direction: column;
+    flex-direction: column
   }
-}
 
-/* Modal styles */
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(3,6,10,0.6);display:flex;align-items:center;justify-content:center;z-index:9999
-}
-.modal{width:920px;max-width:96%;background:linear-gradient(145deg,#0e1220,#0a0f1c);border-radius:14px;padding:18px;border:1px solid rgba(255,107,53,0.08);box-shadow:0 20px 50px rgba(0,0,0,0.7)}
-.modal-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px}
-.modal-header h4{margin:0;color:var(--color-text-white)}
-.close{background:transparent;border:0;color:var(--color-text-secondary);font-size:20px;cursor:pointer}
-.modal-body{display:flex;flex-direction:column;gap:12px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-grid label{display:flex;flex-direction:column;color:var(--color-text-secondary);font-size:13px}
-.form-grid input,.form-grid textarea,.form-grid select{margin-top:6px;background:#111627;border:1px solid #333a50;padding:10px;border-radius:10px;color:white;font-size:14px}
+  .file-name {
+    max-width: 220px
+  }
 
-.form-grid select{
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  padding-right: 44px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%23ff5a1f' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px;
-  cursor: pointer;
-}
+  .plan-card[data-v-d8791ea3] {
+        padding: 18px 8px;
+    }
 
-.form-grid select:focus{
-  outline: none;
-  border-color: #ff8a3d;
-  box-shadow: 0 0 0 4px rgba(255,138,61,0.06);
-}
-
-.form-grid textarea{resize:vertical}
-.form-grid .full{grid-column:1/-1}
-.modal-actions{display:flex;gap:12px;justify-content:flex-end;padding-top:8px}
-
-@media (max-width:900px){
-  .form-grid{grid-template-columns:1fr}
-  .modal{width:92%}
 }
 </style>
