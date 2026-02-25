@@ -1,4 +1,5 @@
 <template>
+  <div class="fundo"></div>
   <div class="page">
     <div class="container">
       <div v-if="notes.length === 0" class="empty-state">
@@ -18,32 +19,22 @@
               <p class="page-sub">Organize suas ideias e lembretes</p>
             </div>
           </div>
-          <div>
+          <div class="header-actions">
+            <input class="search-input" v-model="searchQuery" placeholder="Pesquisar por título..." />
             <button class="new-note" @click="openNew">+ Nova Anotação</button>
           </div>
         </header>
 
         <section class="notes">
-          <transition-group name="note" tag="div" class="notes-grid">
-            <div v-for="note in notes" :key="note.id" class="note-card">
-              <div class="note-card-inner">
-                <div class="note-top">
-                  <h2 class="note-title">{{ note.title || 'Sem título' }}</h2>
-                  <div class="actions">
-                    <button class="icon-btn" @click="edit(note)" aria-label="Editar">✎</button>
-                    <button class="icon-btn" @click="remove(note.id)" aria-label="Remover">✖</button>
-                  </div>
-                </div>
-
-                <p class="content">{{ note.content.slice(0, 240) }}<span v-if="note.content.length > 240">...</span></p>
-
-                <div class="note-footer">
-                  <span class="date">{{ formatDate(note.date) }}</span>
-                </div>
-              </div>
-            </div>
-          </transition-group>
+          <div class="notes-grid" :style="`--cols: ${columns}`">
+            <NoteCard v-for="note in paginatedNotes" :key="note.id" :note="note" @open="openDetail" />
+          </div>
         </section>
+        <div class="pagination" v-if="totalPages > 1">
+          <button class="page-btn" :disabled="page === 1" @click="prevPage">Anterior</button>
+          <span class="page-info">Página {{ page }} / {{ totalPages }}</span>
+          <button class="page-btn" :disabled="page === totalPages" @click="nextPage">Próxima</button>
+        </div>
       </div>
     </div>
 
@@ -55,37 +46,46 @@
             <textarea class="textarea note-textarea" placeholder="Escreva sua anotação..." v-model="current.content" />
 
             <div class="modal-actions">
-              <button class="cancel" @click="close">Cancelar</button>
-              <button class="save" @click="save">Salvar</button>
+              <button class="cancel" @click="close" :disabled="saving">Cancelar</button>
+              <button class="save" @click="save" :disabled="saving">{{ saving ? 'Salvando...' : 'Salvar' }}</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <transition name="toast">
-      <div v-if="toast.visible" class="toast-overlay">
-        <div class="toast" :class="{ confirm: toast.confirm }" role="status">
-          <div class="toast-message">{{ toast.message }}</div>
-          <div v-if="toast.confirm" class="toast-actions">
-            <button class="btn btn-cancel" @click="confirmToastCancel">Cancelar</button>
-            <button class="btn btn-confirm" @click="confirmToastConfirm">Excluir</button>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <NoteModal :note="selectedNote" :visible="showDetailModal" @close="showDetailModal = false" @delete="(id) => { remove(id, selectedNote?.title); showDetailModal = false }" />
+
+    <ModalConfirmarExclusao v-if="showDeleteModal" :id="Number(deleteTargetId)" :titulo="deleteTargetTitle" :url="`http://127.0.0.1:8000/api/anotacoes/${deleteTargetId}`" :label="'Anotação'" @fechar="showDeleteModal = false" @confirmado="() => { showDeleteModal = false; loadNotes(true) }" />
+
+    <LoadingOverlay :show="loading" message="Carregando..." />
+
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, watch } from "vue"
+<script setup lang="ts">
+import { ref, onMounted, watch, computed, Ref } from "vue"
 import api from '../controller/api'
 import { useAuth } from '@/stores/auth'
+import { useToast } from 'vue-toastification'
+import NoteCard from '@/components/NoteCard.vue'
+import NoteModal from '@/components/NoteModal.vue'
+import ModalConfirmarExclusao from '@/components/ModalConfirmarExclusao.vue'
+import LoadingOverlay from '@/components/LoadingOverlay.vue'
 
-const notes = ref([])
+
+type Note = {
+  id: number | string | null
+  title: string
+  content: string
+  date?: string
+  usuario_id?: number | null
+}
+
+const notes: Ref<Note[]> = ref([])
 const showModal = ref(false)
 
-const current = ref({
+const current: Ref<Note> = ref({
   id: null,
   title: "",
   content: "",
@@ -94,13 +94,88 @@ const current = ref({
 
 const auth = useAuth()
 
-onMounted(async () => {
+const columns = ref(4)
+const page = ref(1)
+
+const selectedNote = ref<Note | null>(null)
+const showDetailModal = ref(false)
+const loading = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | string | null>(null)
+const deleteTargetTitle = ref('')
+const saving = ref(false)
+
+function updateColumns() {
+  const w = window.innerWidth
+  if (w >= 1280) columns.value = 4
+  else if (w >= 1000) columns.value = 3
+  else if (w >= 720) columns.value = 2
+  else columns.value = 1
+}
+
+onMounted(() => {
+  updateColumns()
+  window.addEventListener('resize', updateColumns)
+})
+
+const pageSize = computed(() => columns.value * 3) 
+const searchQuery = ref('')
+
+const filteredNotes = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return notes.value
+  return notes.value.filter(n => (n.title || '').toLowerCase().includes(q))
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredNotes.value.length / pageSize.value)))
+
+watch([columns, () => filteredNotes.value.length], () => {
+  if (page.value > totalPages.value) page.value = totalPages.value
+})
+
+watch(searchQuery, () => { page.value = 1 })
+
+const paginatedNotes = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return filteredNotes.value.slice(start, start + pageSize.value)
+})
+
+function prevPage() {
+  if (page.value > 1) page.value--
+}
+
+function nextPage() {
+  if (page.value < totalPages.value) page.value++
+}
+
+function openDetail(note) {
+  selectedNote.value = note
+  showDetailModal.value = true
+}
+
+async function handleDelete(id: number | string) {
+  try {
+    const userId = auth.user?.id ?? null
+    if (userId) {
+      await api.delete(`http://127.0.0.1:8000/api/anotacoes/${id}`)
+      await loadNotes(true)
+    } else {
+      notes.value = notes.value.filter(n => n.id !== id)
+    }
+    toastify.success('Anotação excluída', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+  } catch (err) {
+    console.error('Erro ao excluir anotação:', err)
+    toastify.error('Erro ao excluir anotação', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+  }
+}
+
+async function loadNotes(silent = false) {
+  if (!silent) loading.value = true
   try {
     const userId = auth.user?.id ?? null
     if (userId) {
       const resp = await api.get(`/anotacoes/usuario/${userId}`)
-      console.log('Anotações carregadas do servidor:', resp.data)
-      function normalize(a) {
+      function normalize(a: any) {
         if (!a) return null
         return {
           id: a.id,
@@ -113,6 +188,7 @@ onMounted(async () => {
 
       if (Array.isArray(resp.data)) {
         notes.value = resp.data.map(normalize).filter(Boolean)
+        notes.value.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       } else if (typeof resp.data === 'object' && resp.data !== null) {
         const n = normalize(resp.data)
         notes.value = n ? [n] : []
@@ -121,14 +197,21 @@ onMounted(async () => {
       }
       return
     }
+
+    const saved = localStorage.getItem("notes")
+    if (saved) {
+      notes.value = JSON.parse(saved)
+      notes.value.sort((a: Note, b: Note) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime())
+    } else notes.value = []
   } catch (error) {
     console.error('Erro ao carregar anotações do servidor:', error)
+    toastify.error('Erro ao carregar anotações', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+  } finally {
+    if (!silent) loading.value = false
   }
+}
 
-  // Fallback: load from localStorage
-  const saved = localStorage.getItem("notes")
-  if (saved) notes.value = JSON.parse(saved)
-})
+onMounted(() => loadNotes())
 
 watch(
   notes,
@@ -145,36 +228,7 @@ const toast = ref({
   duration: 3000,
   onConfirm: null
 })
-
-const pendingDeleteId = ref(null)
-
-function showConfirmToast(message, onConfirm) {
-  toast.value = { visible: true, message, confirm: true, duration: 0, onConfirm }
-}
-
-function showToast(message, duration = 3000) {
-  toast.value = { visible: true, message, confirm: false, duration, onConfirm: null }
-  setTimeout(() => {
-    if (!toast.value.confirm) {
-      hideToast()
-    }
-  }, duration)
-}
-
-function hideToast() {
-  toast.value = { visible: false, message: '', confirm: false, duration: 3000, onConfirm: null }
-}
-
-function confirmToastConfirm() {
-  if (typeof toast.value.onConfirm === 'function') {
-    toast.value.onConfirm()
-  }
-}
-
-function confirmToastCancel() {
-  pendingDeleteId.value = null
-  hideToast()
-}
+const toastify = useToast()
 
 function openNew() {
   current.value = {
@@ -191,76 +245,62 @@ function edit(note) {
   showModal.value = true
 }
 
-function save() {
+async function save() {
   if (!current.value.content.trim()) return
-  const isEdit = !!current.value.id
+  saving.value = true
+  try {
+    const isEdit = !!current.value.id
 
-  if (isEdit) {
-    const index = notes.value.findIndex(
-      n => n.id === current.value.id
-    )
-    notes.value[index] = { ...current.value }
-    showToast('Anotação atualizada')
-    close()
-    return
-  }
-
-  // Create via API if user available
-  const userId = auth.user?.id ?? null
-  if (userId) {
-    const payload = {
-      usuario_id: userId,
-      texto: current.value.content,
-      titulo: current.value.title
+    if (isEdit) {
+      const index = notes.value.findIndex(
+        n => n.id === current.value.id
+      )
+      notes.value[index] = { ...current.value }
+      toastify.success('Anotação atualizada', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+      close()
+      return
     }
 
-    api.post('/anotacoes', payload)
-      .then(resp => {
-        // Normalize created annotation
-        const a = resp.data
-        const created = a && typeof a === 'object' ? {
-          id: a.id,
-          title: a.titulo ?? a.title ?? current.value.title,
-          content: a.texto ?? a.content ?? current.value.content,
-          date: a.created_at ?? a.date ?? new Date().toISOString(),
-          usuario_id: a.usuario_id ?? userId
-        } : {
-          id: resp.data?.id ?? Date.now(),
-          title: current.value.title,
-          content: current.value.content,
-          date: new Date().toISOString()
-        }
-        notes.value.unshift(created)
-        showToast('Anotação criada')
+    const userId = auth.user?.id ?? null
+    if (userId) {
+      const payload = {
+        usuario_id: userId,
+        texto: current.value.content,
+        titulo: current.value.title
+      }
+      try {
+        await api.post('/anotacoes', payload)
+        await loadNotes(true)
+        toastify.success('Anotação criada', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
         close()
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Erro ao criar anotação:', err)
-        showToast('Erro ao criar anotação')
-      })
+        toastify.error('Erro ao criar anotação', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+      }
 
-    return
+      return
+    }
+
+    notes.value.unshift({
+      ...current.value,
+      id: Date.now(),
+      date: new Date().toISOString()
+    })
+    toastify.success('Anotação criada', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+    close()
+  } catch (err) {
+    console.error('Erro ao salvar anotação:', err)
+    toastify.error('Erro ao salvar anotação', { timeout: 3000, position: 'bottom-right', hideProgressBar: true })
+  } finally {
+    saving.value = false
   }
-
-  // Fallback: local-only create
-  notes.value.unshift({
-    ...current.value,
-    id: Date.now(),
-    date: new Date().toISOString()
-  })
-  showToast('Anotação criada')
-  close()
 }
 
-function remove(id) {
-  pendingDeleteId.value = id
-  showConfirmToast("Excluir esta anotação?", () => {
-    notes.value = notes.value.filter(n => n.id !== pendingDeleteId.value)
-    pendingDeleteId.value = null
-    hideToast()
-    showToast("Anotação excluída")
-  })
-} 
+function remove(id: number | string, title?: string) {
+  deleteTargetId.value = id
+  deleteTargetTitle.value = title ?? ''
+  showDeleteModal.value = true
+}
 
 function close() {
   showModal.value = false
@@ -272,6 +312,28 @@ function formatDate(date) {
 </script>
 
 <style scoped>
+.fundo {
+  width: 100%;
+  height: 100vh;
+  background-image: url('/assets/fundo.png');
+  object-fit: cover;
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  filter: brightness(0.5);
+  backdrop-filter: blur(5px);
+}
+
+.fundo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
 .page {
   min-height: 100vh;
   background: radial-gradient(circle at top, #1c1c1c, #050505);
@@ -289,15 +351,18 @@ function formatDate(date) {
   min-height: 100vh;
   padding: 32px;
 }
+
 .empty-message {
   color: #aaa;
   font-size: 22px;
   text-align: center;
 }
+
 .with-notes {
   display: flex;
   flex-direction: column;
 }
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -305,82 +370,28 @@ function formatDate(date) {
   border-bottom: 1px solid #2a0000;
   padding-bottom: 24px;
 }
+
 .title {
   display: flex;
   gap: 12px;
   align-items: center;
 }
+
 .title h1 {
   font-size: 32px;
 }
+
 .icon {
   font-size: 28px;
   color: #ff2a2a;
 }
-.new-note {
-  background: linear-gradient(90deg, #ff0000, #ff6a00);
-  border: none;
-  padding: 18px 22px;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(255, 60, 0, 0.6);
-  transition: 0.2s;
-  font-size: 15px;
-}
-.new-note:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(255, 90, 0, 0.9);
-}
-.new-note2 {
-  background: linear-gradient(90deg, #ff0000, #ff6a00);
-  border: none;
-  padding: 20px 32px;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(255, 60, 0, 0.6);
-  transition: 0.2s;
-  font-size: 20px;
-}
-.new-note2:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(255, 90, 0, 0.9);
-}
-.notes {
-  margin-top: 32px;
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.empty {
-  color: #aaa;
-}
-.note-card {
-  width: 340px;
-  background: #121212;
-  border: 1px solid #8b0000;
-  border-radius: 14px;
-  padding: 18px;
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
+
 .note-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .actions span {
   margin-left: 10px;
   cursor: pointer;
@@ -388,10 +399,12 @@ function formatDate(date) {
   border-radius: 8px;
   transition: background 0.15s ease, transform 0.12s ease;
 }
+
 .actions span:hover {
   background: rgba(255, 255, 255, 0.04);
   transform: translateY(-1px);
 }
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -400,6 +413,7 @@ function formatDate(date) {
   align-items: center;
   justify-content: center;
 }
+
 .modal {
   background: #141414;
   border: 1px solid #8b0000;
@@ -411,6 +425,7 @@ function formatDate(date) {
   flex-direction: column;
   gap: 16px;
 }
+
 .input,
 .textarea {
   background: #0e0e0e;
@@ -419,15 +434,18 @@ function formatDate(date) {
   padding: 12px;
   border-radius: 8px;
 }
+
 .textarea {
   min-height: 140px;
   resize: none;
 }
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
+
 .cancel {
   background: transparent;
   border: 1px solid #555;
@@ -436,6 +454,7 @@ function formatDate(date) {
   border-radius: 8px;
   cursor: pointer;
 }
+
 .save {
   background: linear-gradient(90deg, #ff0000, #ff6a00);
   border: none;
@@ -444,92 +463,25 @@ function formatDate(date) {
   border-radius: 8px;
   cursor: pointer;
 }
-.toast-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9998;
-}
-.toast {
-  position: relative;
-  background: rgba(20,20,20,0.98);
-  border: 1px solid rgba(255,255,255,0.04);
-  color: #fff;
-  padding: 24px 32px;
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-  justify-content: center;
-  min-width: 380px;
-  max-width: 500px;
-  z-index: 9999;
-}
-.toast.confirm {
-  min-width: 420px;
-}
-.toast-message {
-  flex: 1;
-  font-size: 16px;
-  color: #fff;
-  text-align: center;
-}
-.toast-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-}
-.toast-actions .btn {
-  padding: 10px 18px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-}
-.toast-actions .btn-cancel {
-  background: transparent;
-  color: #ccc;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-.toast-actions .btn-confirm {
-  background: linear-gradient(90deg,#ff0000,#ff6a00);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(255,90,0,0.15);
-}
 
-.notes-grid {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.note-enter-from,
-.note-leave-to {
-  opacity: 0;
-  transform: translateY(8px) scale(0.995);
-}
-.note-enter-active,
-.note-leave-active {
-  transition: all 240ms cubic-bezier(.2,.8,.2,1);
-}
+
+
+.notes-grid {}
 
 .toast-enter-from {
   opacity: 0;
   transform: translateY(12px) scale(0.98);
 }
+
 .toast-enter-active {
   transition: all 180ms ease;
 }
+
 .toast-leave-to {
   opacity: 0;
   transform: translateY(12px) scale(0.98);
 }
+
 .toast-leave-active {
   transition: all 160ms ease;
 }
@@ -586,6 +538,21 @@ function formatDate(date) {
   border-bottom: 1px solid var(--color-border);
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-white);
+  min-width: 220px;
+}
+
 .title-wrap {
   display: flex;
   gap: 14px;
@@ -611,7 +578,7 @@ function formatDate(date) {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: rgba(255,107,53,0.12);
+  background: rgba(255, 107, 53, 0.12);
   color: var(--color-primary);
   font-weight: 700;
 }
@@ -624,11 +591,14 @@ function formatDate(date) {
   color: var(--color-text-white);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
-  box-shadow: 0 8px 30px rgba(255,107,53,0.08);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.08);
   transition: transform .16s ease, box-shadow .16s ease;
 }
 
-.new-note:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(255,107,53,0.12); }
+.new-note:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(255, 107, 53, 0.12);
+}
 
 .new-note2 {
   background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
@@ -638,11 +608,14 @@ function formatDate(date) {
   color: var(--color-text-white);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
-  box-shadow: 0 8px 30px rgba(255,107,53,0.08);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.08);
   transition: transform .16s ease, box-shadow .16s ease;
 }
 
-.new-note2:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(255,107,53,0.12); }
+.new-note2:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(255, 107, 53, 0.12);
+}
 
 .notes {
   margin-top: 6px;
@@ -650,36 +623,104 @@ function formatDate(date) {
 
 .notes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(var(--cols), minmax(240px, 1fr));
   gap: 18px;
 }
 
 .note-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, #1E293B);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 18px;
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 
-.note-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(2,6,23,0.55); border-color: rgba(255,107,53,0.16); }
+.note-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.55);
+  border-color: rgba(255, 107, 53, 0.16);
+}
 
-.note-card-inner { display: flex; flex-direction: column; gap: 12px; min-height: 160px; }
+.note-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 160px;
+}
 
-.note-top { display:flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-.note-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--color-text-white); }
+.note-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
 
-.actions { display:flex; gap:8px; }
-.icon-btn { background: transparent; border: none; color: var(--color-text-secondary); padding:6px; border-radius:8px; cursor:pointer; transition: background .12s ease, transform .12s ease; }
-.icon-btn:hover { background: rgba(255,255,255,0.03); transform: translateY(-2px); color: var(--color-text-white); }
+.note-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-white);
+}
 
-.content { color: var(--color-text-secondary); font-size: 14px; line-height: 1.4; margin: 0; overflow: hidden; }
+.actions {
+  display: flex;
+  gap: 8px;
+}
 
-.note-footer { display:flex; justify-content: flex-end; }
-.date { color: var(--color-text-tertiary, var(--color-text-secondary)); font-size: 13px; }
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s ease, transform .12s ease;
+}
 
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 9999; }
-.modal-card { width: 100%; max-width: 720px; border-radius: 12px; padding: 24px; background: var(--color-bg-card); border: 1px solid var(--color-border); box-shadow: 0 30px 80px rgba(2,6,23,0.75); }
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateY(-2px);
+  color: var(--color-text-white);
+}
+
+.content {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+  overflow: hidden;
+}
+
+.note-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.date {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: 13px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 30px 80px rgba(2, 6, 23, 0.75);
+}
 
 .notebook {
   display: block;
@@ -687,12 +728,12 @@ function formatDate(date) {
 
 .notebook-sheet {
   width: 100%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.00));
   border-radius: 8px;
   padding: 18px;
-  border: 1px solid rgba(255,255,255,0.02);
+  border: 1px solid rgba(255, 255, 255, 0.02);
   position: relative;
-  box-shadow: 0 8px 30px rgba(2,6,23,0.45);
+  box-shadow: 0 8px 30px rgba(2, 6, 23, 0.45);
   min-height: 320px;
 }
 
@@ -701,13 +742,14 @@ function formatDate(date) {
   content: "";
   position: absolute;
   inset: 18px 18px 18px 18px;
-  background-image: linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 100% 28px;
   pointer-events: none;
   border-radius: 4px;
 }
 
-.input, .textarea {
+.input,
+.textarea {
   width: 100%;
   background: transparent;
   border: none;
@@ -715,38 +757,136 @@ function formatDate(date) {
   padding: 8px 10px;
   border-radius: 4px;
 }
-.note-title-input { font-size: 18px; font-weight: 700; margin-bottom: 6px; padding-left: 6px; }
-.note-textarea { min-height: 220px; resize: vertical; padding-left: 6px; line-height: 1.6; }
-.modal-actions { display:flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-.modal-actions { display:flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
-.cancel { background: transparent; border: 1px solid rgba(255,255,255,0.06); color: var(--color-text-secondary); padding: 10px 14px; border-radius: 8px; cursor: pointer; }
-.save { background: linear-gradient(90deg,var(--color-primary),var(--color-primary-dark)); border: none; color: var(--color-text-white); padding: 10px 16px; border-radius: 8px; cursor: pointer; }
 
-.toast-overlay { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; z-index: 9998; }
-.toast { background: var(--color-bg-card); border: 1px solid var(--color-border); color: var(--color-text-white); padding: 20px 28px; border-radius: 12px; box-shadow: 0 12px 40px rgba(2,6,23,0.6); min-width: 320px; }
-.toast.confirm { min-width: 420px; }
-.toast-message { font-size: 15px; margin-bottom: 12px; }
-.toast-actions { display:flex; gap:12px; justify-content:center; }
-.btn { padding: 8px 14px; border-radius: 8px; font-weight:600; }
-.btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.04); color: var(--color-text-secondary); }
-.btn-confirm { background: linear-gradient(90deg,var(--color-primary),var(--color-primary-dark)); color: var(--color-text-white); }
+.note-title-input {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding-left: 6px;
+}
 
-.note-enter-from, .note-leave-to { opacity:0; transform: translateY(8px) scale(0.995); }
-.note-enter-active, .note-leave-active { transition: all 240ms cubic-bezier(.2,.8,.2,1); }
+.note-textarea {
+  min-height: 220px;
+  resize: vertical;
+  padding-left: 6px;
+  line-height: 1.6;
+}
 
-.toast-enter-from { opacity:0; transform: translateY(12px) scale(0.98); }
-.toast-enter-active { transition: all 180ms ease; }
-.toast-leave-to { opacity:0; transform: translateY(12px) scale(0.98); }
-.toast-leave-active { transition: all 160ms ease; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.save {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  border: none;
+  color: var(--color-text-white);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary);
+}
+
+.btn-confirm {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  color: var(--color-text-white);
+}
+
+/* note animations removed */
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.toast-enter-active {
+  transition: all 180ms ease;
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.toast-leave-active {
+  transition: all 160ms ease;
+}
 
 @media (max-width: 720px) {
-  .notes-grid { grid-template-columns: repeat(2, 1fr); }
+  .notes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 480px) {
-  .notes-grid { grid-template-columns: 1fr; }
-  .note-card-inner { min-height: auto; }
-  .empty-card { padding: 28px 18px; }
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .note-card-inner {
+    min-height: auto;
+  }
+
+  .empty-card {
+    padding: 28px 18px;
+  }
 }
 
+.pagination {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.page-btn {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-dark));
+  border: none;
+  color: var(--color-text-white);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.page-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
 </style>

@@ -11,6 +11,7 @@ import Cadastro from '../views/Cadastro.vue'
 import Anotacoes from '../views/Anotacoes.vue'
 import Perfil from '../views/Perfil.vue'
 import NotFound from '../views/NotFound.vue'
+import exercicios from '@/views/exercicios.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -21,7 +22,9 @@ const routes = [
   { path: '/cadastro', name: 'Cadastro', component: Cadastro, meta: { hideNavbar: true } },
   { path: '/notas', name: 'Notas', component: Anotacoes, meta: { requiresAuth: true, requiredLevel: 1 } },
   { path: '/perfil', name: 'Perfil', component: Perfil, meta: { requiresAuth: true } },
+  { path: '/exercicios', name: 'Exercicios', component: exercicios, meta: { requiresAuth: true, requiredLevel: 1 } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound, meta: { hideNavbar: true } },
+  {}
 ]
 
 const router = createRouter({
