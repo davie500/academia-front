@@ -242,6 +242,7 @@ th {
 @media (max-width: 800px) {
   .admin {
     padding: 16px;
+    height: 100vh;
   }
 
   .topbar {

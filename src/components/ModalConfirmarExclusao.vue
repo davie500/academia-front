@@ -9,9 +9,9 @@
       </div>
 
       <div class="modal__content">
-        <h2 class="modal__title">Excluir Treino</h2>
+        <h2 class="modal__title">Excluir {{ labelText }}</h2>
         <p class="modal__message">
-          Tem certeza que deseja excluir o treino <strong>{{ titulo }}</strong>? Esta ação não pode ser desfeita.
+          Tem certeza que deseja excluir {{ labelText }} <strong>{{ titulo }}</strong>? Esta ação não pode ser desfeita.
         </p>
       </div>
 
@@ -38,6 +38,8 @@ const toast = useToast()
 const props = defineProps<{
   id: number
   titulo: string
+  url?: string
+  label?: string
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +48,8 @@ const emit = defineEmits<{
 }>()
 
 const loading = ref(false)
+
+const labelText = props.label ?? 'Treino'
 
 function fechar() {
   if (!loading.value) emit('fechar')
@@ -56,12 +60,13 @@ async function confirmar() {
 
   loading.value = true
   try {
-    await api.delete(`/treinos/${props.id}`)
-    toast.success('Treino excluído com sucesso!')
-    emit('confirmado')
+    const deleteUrl = props.url ?? `/treinos/${props.id}`
+    await api.delete(deleteUrl)
+    toast.success(`${labelText} excluído com sucesso!`)
+      emit('confirmado')
   } catch (error) {
     console.error('Erro ao excluir treino:', error)
-    toast.error('Não foi possível excluir o treino. Tente novamente.')
+      toast.error(`Não foi possível excluir ${props.label ?? 'o item'}. Tente novamente.`)
   } finally {
     loading.value = false
   }

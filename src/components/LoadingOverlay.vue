@@ -8,8 +8,6 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
-
 const props = defineProps({
   show: { type: Boolean, required: true },
   message: { type: String, default: 'Carregando...' }

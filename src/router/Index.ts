@@ -11,6 +11,8 @@ import Cadastro from '../views/Cadastro.vue'
 import Pagamento from '../views/Pagamento.vue'
 import Perfil from '../views/Perfil.vue'
 import Admin from '../views/PainelAdmin.vue'
+import NotFound from '../views/NotFound.vue'
+import Exercicios from '@/views/Exercicios.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -21,7 +23,9 @@ const routes = [
   { path: '/cadastro', name: 'Cadastro', component: Cadastro, meta: { hideNavbar: true } },
   { path: '/notas', name: 'Notas', component: Anotacoes, meta: { requiresAuth: true }},
   { path: '/perfil', name: 'Perfil', component: Perfil, meta: { requiresAuth: true } },
-  { path: '/admin', name: 'Admin', component: Admin }
+  { path: '/admin', name: 'Admin', component: Admin },
+  { path: '/exercicios', name: 'Exercicios', component: Exercicios, meta: { requiresAuth: true, requiredLevel: 1 } },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound, meta: { hideNavbar: true } },
 ]
 
 const router = createRouter({
