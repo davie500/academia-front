@@ -1,11 +1,11 @@
 <template>
+  <div class="fundo"></div>
   <main class="admin">
     <header class="topbar">
       <div>
         <h1>Painel Admin</h1>
         <p>Gestao de usuarios e assinaturas.</p>
       </div>
-      <!-- Removido os botões de atualizar e novo usuário -->
     </header>
 
     <div v-if="error" class="error-message">
@@ -65,7 +65,6 @@
         </tbody>
       </table>
     </section>
-    <!-- paginação -->
     <div v-if="!loading && !error && totalPages > 1" class="pagination-wrap">
       <div class="pagination-info">
         Mostrando <strong>{{ filteredUsers.length === 0 ? 0 : ((page-1)*perPage + 1) }}</strong> –
@@ -89,7 +88,6 @@ import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import { computed, ref, onMounted, watch } from 'vue'
 import api from '@/controller/api'
 
-// pagination helpers
 import { paginate, totalPages as calcTotalPages, pagesToShow as calcPagesToShow } from '@/lib/pagination'
 
 const search = ref('')
@@ -98,7 +96,6 @@ const users = ref([])
 const loading = ref(false)
 const error = ref(null)
 
-// pagination state
 const page = ref(1)
 const perPage = ref(10)
 
@@ -147,7 +144,6 @@ const filteredUsers = computed(() => {
   })
 })
 
-// when filters change, reset current page if it would be out of range
 watch(filteredUsers, () => {
   if (page.value > totalPages.value) page.value = 1
 })
@@ -184,9 +180,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
 .admin {
   padding: 24px;
-  background: linear-gradient(180deg, var(--color-bg-dark), var(--color-bg-darker));
+  background-image: url('/assets/fundo.png');
   color: var(--color-text-white);
 }
 

@@ -8,6 +8,8 @@
   --color-bg-darker: #000000;
   --color-bg-card: #1a1f2e;
   
+  --hover-bg: var(--color-bg-darker);
+  
   --color-text-white: #ffffff;
   --color-text-primary: #cbd5e1;
   --color-text-secondary: #94a3b8;

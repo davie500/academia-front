@@ -1,8 +1,12 @@
 <template>
+  <div class="fundo"></div>
+
   <LoadingOverlay
     :show="loading"
     message="Carregando treinos..."
   />
+
+ 
 
   <div v-if="!loading" class="treino-page">
     <div class="treino-header">
@@ -106,8 +110,6 @@ const mostrarModalCriar = ref(false)
 const mostrarModalDetalhes = ref(false)
 const treinoSelecionado = ref<Treino | null>(null)
 const usuarioId = ref<number | null>(null)
-
-// Dados pré-carregados para criar treinos (antes carregados no modal)
 const treinosPremontados = ref<any[]>([])
 const exerciciosDisponiveis = ref<any[]>([])
 const carregandoTreinos = ref(true)
@@ -205,9 +207,30 @@ async function excluirTreino(id: number) {
 <style scoped>
 @import '../assets/styles/variables.css';
 
+.fundo {
+  width: 100%;
+  height: 100vh;
+  background-image: url('/assets/fundo.png');
+  object-fit: cover;
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  filter: brightness(0.5);
+  backdrop-filter: blur(5px);
+}
+
+.fundo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
 .treino-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, var(--color-bg-dark) 0%, var(--color-bg-darker) 50%, var(--color-bg-dark) 100%);
   padding: 48px 16px;
 }
 
@@ -323,14 +346,14 @@ async function excluirTreino(id: number) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 24px;
-  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(26, 31, 46, 0.5) 100%);
+  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(26, 31, 46, 1) 100%);
   cursor: pointer;
   transition: var(--transition-base);
 }
 
 .treino-card:hover {
   border-color: var(--color-primary);
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(26, 31, 46, 0.8) 100%);
+  background: linear-gradient(135deg, rgba(26, 31, 46, 1) 100%);
   transform: translateY(-4px);
 }
 

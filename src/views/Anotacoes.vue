@@ -6,7 +6,7 @@
         <div class="empty-card">
           <div class="empty-illustration"></div>
           <p class="empty-message">Nenhuma anotação ainda</p>
-          <button class="new-note2" @click="openNew">+ Nova Anotação</button>
+          <button class="new-note2" @click="openNew">Nova Anotação</button>
         </div>
       </div>
 
@@ -21,12 +21,12 @@
           </div>
           <div class="header-actions">
             <input class="search-input" v-model="searchQuery" placeholder="Pesquisar por título..." />
-            <button class="new-note" @click="openNew">+ Nova Anotação</button>
+            <button class="new-note" @click="openNew">Nova Anotação</button>
           </div>
         </header>
 
         <section class="notes">
-          <div class="notes-grid" :style="`--cols: ${columns}`">
+          <div class="notes-grid">
             <NoteCard v-for="note in paginatedNotes" :key="note.id" :note="note" @open="openDetail" />
           </div>
         </section>
@@ -93,7 +93,6 @@ const current: Ref<Note> = ref({
 })
 
 const auth = useAuth()
-
 const columns = ref(4)
 const page = ref(1)
 
@@ -107,9 +106,9 @@ const saving = ref(false)
 
 function updateColumns() {
   const w = window.innerWidth
-  if (w >= 1280) columns.value = 4
-  else if (w >= 1000) columns.value = 3
-  else if (w >= 720) columns.value = 2
+  if (w >= 1025) columns.value = 4
+  else if (w >= 769) columns.value = 3
+  else if (w >= 426) columns.value = 2
   else columns.value = 1
 }
 
@@ -334,14 +333,6 @@ function formatDate(date) {
   backdrop-filter: blur(5px);
 }
 
-.page {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #1c1c1c, #050505);
-  color: #fff;
-  padding: 32px;
-  font-family: "Segoe UI", sans-serif;
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -466,8 +457,6 @@ function formatDate(date) {
 
 
 
-.notes-grid {}
-
 .toast-enter-from {
   opacity: 0;
   transform: translateY(12px) scale(0.98);
@@ -487,6 +476,7 @@ function formatDate(date) {
 }
 
 
+/* retain a sensible page container; outer layout handled globally */
 .page {
   min-height: 100vh;
   background: linear-gradient(180deg, var(--color-bg-dark) 0%, var(--color-bg) 100%);
@@ -495,10 +485,9 @@ function formatDate(date) {
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
+/* the .container class is defined globally and imported from responsive.css;
+   this view no longer overrides its max-width so every screen shares the same
+   fluid behaviour */
 
 .empty-state {
   display: flex;
@@ -623,7 +612,8 @@ function formatDate(date) {
 
 .notes-grid {
   display: grid;
-  grid-template-columns: repeat(var(--cols), minmax(240px, 1fr));
+  /* column count is controlled by global responsive rules; gap remains local
+     because spacing variables may vary per section */
   gap: 18px;
 }
 
@@ -737,7 +727,6 @@ function formatDate(date) {
   min-height: 320px;
 }
 
-/* lined paper effect */
 .notebook-sheet::before {
   content: "";
   position: absolute;
@@ -823,8 +812,6 @@ function formatDate(date) {
   color: var(--color-text-white);
 }
 
-/* note animations removed */
-
 .toast-enter-from {
   opacity: 0;
   transform: translateY(12px) scale(0.98);
@@ -843,25 +830,8 @@ function formatDate(date) {
   transition: all 160ms ease;
 }
 
-@media (max-width: 720px) {
-  .notes-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .notes-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .note-card-inner {
-    min-height: auto;
-  }
-
-  .empty-card {
-    padding: 28px 18px;
-  }
-}
+/* responsive adjustments moved to global stylesheet (see responsive.css)
+   so they can be reused by any page */
 
 .pagination {
   display: flex;

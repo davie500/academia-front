@@ -178,7 +178,6 @@
         @close="showPlanModal = false"
       />
 
-      <!-- Modal de confirmação de cancelamento -->
       <div v-if="showCancelModal" class="cancel-modal-backdrop" @click.self="closeCancelModal">
         <div class="cancel-modal">
           <h3 class="cancel-modal__title">Tem certeza?</h3>
@@ -277,7 +276,6 @@ onMounted(async () => {
     const response = await api.get("/auth/me")
     usuario.value = response.data
     syncEditFromUsuario()
-    console.log("Usuário carregado:", usuario.value)
     await loadPlanos()
   } catch (error) {
     console.error("Erro ao buscar usuário:", error)
@@ -290,7 +288,6 @@ async function loadPlanos() {
   planosLoading.value = true
   try {
     const response = await api.get('/planoPeriodo')
-    console.log(response.data)
     const mapa = {}
 
     response.data.forEach(item => {
@@ -933,7 +930,6 @@ textarea {
   color: var(--color-text-white)
 }
 
-/* Remove underline from router-link buttons and ensure inline-block */
 .btn-primary,
 .btn-outline {
   text-decoration: none;

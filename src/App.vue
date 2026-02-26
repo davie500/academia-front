@@ -18,23 +18,18 @@ onMounted(() => {
   const pusher = (echo.connector as any).pusher
 
   pusher.connection.bind('connecting', () => {
-    console.log('⏳ Conectando websocket...')
+    
   })
 
   pusher.connection.bind('connected', () => {
-    console.log('✅ WebSocket conectado')
+  
   })
 
   pusher.connection.bind('disconnected', () => {
-    console.log('❌ WebSocket desconectado')
   })
 
   echo.channel(`plano`)
     .listen('.plano.atualizado', (e: any) => {
-      console.log('🔥 EVENTO RECEBIDO');
-      console.log('Status pagamento:', e.status_pagamento);
-      console.log('Novo nível:', e.nivel);
-      console.log('Expira em:', e.data_fim);
 
       
       localStorage.setItem('nivel', String(e.nivel))
@@ -45,7 +40,6 @@ onMounted(() => {
       
 
       if (e.status_pagamento === 'rejected') {
-        console.log('❌ Pagamento recusado');
       }
     });
 })

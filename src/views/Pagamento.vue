@@ -273,7 +273,7 @@ async function initCardBrick() {
         }
       },
       callbacks: {
-        onReady: () => console.log('Card Brick pronto ✔'),
+        onReady: () => console.log(),
 
         onSubmit: async (cardData: any) => {
           try {
@@ -317,8 +317,6 @@ async function gerarPixQrCode() {
         Authorization: `Bearer 24|4K4w2XZgYXX1bw264YxtL2x1ucyc4mldKcP5Xwrf14308d5f`
       }
     })
-
-    console.log("RETORNO BACKEND:", data)
 
     pixGerado.value = true
 

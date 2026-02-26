@@ -191,7 +191,6 @@ onUnmounted(() => {
     margin-top: 12px
 }
 
-/* Make PricingCard adapt to the container and avoid horizontal overflow */
 ::v-deep .pricing-card {
     max-width: 320px !important;
     width: 100% !important;

@@ -1,5 +1,6 @@
 @import './variables.css';
 @import './reset.css';
+@import './responsive.css';
 
 body {
   background: linear-gradient(to bottom, var(--color-bg-dark) 0%, var(--color-bg-darker) 50%, var(--color-bg-dark) 100%);

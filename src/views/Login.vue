@@ -82,7 +82,6 @@ async function handleLogin() {
     })
 
     if (response.data?.token) {
-      console.log('Login bem-sucedido:', response.data)
       auth.login(response.data)
 
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`

@@ -38,116 +38,83 @@
 .titulo {
     color: white;
     text-align: center;
-    font-size: 5em;
-    position: absolute;
-    top: 25%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    white-space: nowrap;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-weight: 500;
+    font-size: clamp(1.9rem, 8vw, 5rem);
+    position: static;
+    transform: none;
+    margin-top: 6vh;
+    line-height: 1.1;
+    display: block;
 }
 .cores {
+    display: block;
     background-image: linear-gradient(to right, #ff7f00, #ff0000);
     background-clip: text;
+    -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    top: 38%;
+    margin-top: 0.25rem;
 }
 .descricao {
     color: rgba(214, 209, 209, 0.89);
     text-align: center;
-    font-size: 1.5em;
-    position: absolute;
-    top: 63%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    font-size: clamp(0.95rem, 3vw, 1.5rem);
+    margin: 0.8rem 0 0;
+    padding: 0 0.6rem;
 }
 .plans {
     background-image: linear-gradient(to right, #ff7f00, #ff0000);
     color: white;
-    position: absolute;
     text-decoration: none;
-    top: 85%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.2em;
-    padding: 20px 40px;
-    border-radius: 8px;
+    display: block;
+    width: calc(100% - 2rem);
+    text-align: center;
+    padding: clamp(12px, 4vw, 20px) clamp(6px, 3vw, 40px);
+    border-radius: 10px;
     transition: all 0.3s ease;
+    margin: 1.5rem auto 0;
 }
 .plans:hover {
-    text-decoration: none;
-    color: white;
-    transform: translate(-50%, -50%) scale(1.1);
-    box-shadow: 0 8px 20px rgba(255, 127, 0, 0.4);
+    transform: scale(1.05);
 }
 
-@media (max-width: 900px) {
-    .titulo {
-        font-size: 3.2rem;
-        top: 30%;
-    }
-    .cores {
-        top: 36%;
-    }
-    .descricao {
-        font-size: 1.15em;
-        top: 55%;
-    }
-    .plans {
-        padding: 16px 32px;
-        font-size: 1em;
-    }
-}
 
-@media (max-width: 600px) {
-    .container {
-        box-sizing: border-box;
-        padding: 2rem 1rem;
+@media (min-width: 600px) {
+    .titulo,
+    .cores,
+    .descricao,
+    .plans {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
     }
     .titulo {
-        position: static;
-        transform: none;
-        top: auto;
-        left: auto;
-        font-size: 1.9rem;
-        line-height: 1.1;
-        white-space: normal;
-        margin-top: 6vh;
-        text-align: center;
-        display: block;
+        top: 25%;
+        white-space: nowrap;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 500;
     }
     .cores {
-        display: block;
-        background-image: linear-gradient(to right, #ff7f00, #ff0000);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-top: 0.25rem;
+        top: 38%;
+        margin-top: 0;
     }
     .descricao {
-        position: static;
-        transform: none;
-        font-size: 0.95rem;
-        line-height: 1.45;
-        margin: 0.8rem 0 0;
-        text-align: center;
-        padding: 0 0.6rem;
+        top: 63%;
+        margin: 0;
+        padding: 0;
     }
     .plans {
-        transform: none;
-        left: 11px;
-        display: block;
-        width: calc(100% - 2rem);
-        text-align: center;
-        padding: 12px 6px;
-        border-radius: 10px;
+        top: 85%;
+        margin: 0;
+        width: auto;
+        border-radius: 8px;
     }
     .plans:hover {
-        transform: scale(1.05);
+        transform: translate(-50%, -50%) scale(1.1);
     }
+}
+
+@media (min-width: 900px) {
+    .titulo { font-size: 5em; }
+    .descricao { font-size: 1.5em; }
+    .plans { font-size: 1.2em; }
 }
 </style>

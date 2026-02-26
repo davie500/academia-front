@@ -217,7 +217,6 @@ export default {
         try {
           const response = await api.post('/usuarios', body)
           toast.success('Cadastro realizado com sucesso!')
-          console.log('Resposta da API:', response.data)
           
           this.name = ''
           this.email = ''

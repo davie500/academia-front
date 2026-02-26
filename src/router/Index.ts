@@ -13,6 +13,7 @@ import Perfil from '../views/Perfil.vue'
 import NotFound from '../views/NotFound.vue'
 import exercicios from '@/views/exercicios.vue'
 import Admin from '../views/PainelAdmin.vue'
+import HistoricoPagamento from '../views/HistoricoPagamento.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -25,7 +26,8 @@ const routes = [
   { path: '/perfil', name: 'Perfil', component: Perfil, meta: { requiresAuth: true } },
   { path: '/exercicios', name: 'Exercicios', component: exercicios, meta: { requiresAuth: true, requiredLevel: 1 } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound, meta: { hideNavbar: true } },
-  { path: '/admin', name: 'Admin', component: Admin }
+  { path: '/admin', name: 'Admin', component: Admin, meta: { requiresAdmin: true } },
+  { path: '/historico', name: 'Historico', component: HistoricoPagamento, meta: { requiresAuth: true} },
 
 ]
 
@@ -38,6 +40,11 @@ router.beforeEach((to, from, next) => {
   const auth = useAuth()
   const toast = useToast()
 
+  const publicPaths = ['/', '/planos', '/login', '/cadastro']
+  if (!auth.token && !publicPaths.includes(to.path)) {
+    return next({ name: 'NotFound' })
+  }
+
   if (to.meta.requiresAuth && !auth.token) {
     toast.error('Você precisa estar logado')
     return next({
@@ -46,11 +53,16 @@ router.beforeEach((to, from, next) => {
     })
   }
 
-  if (typeof to.meta.requiredLevel === 'number') {
+  if (typeof to.meta.requiredLevel === 'number' && !auth.admin) {
     if ((auth.nivel ?? 0) < to.meta.requiredLevel) {
       toast.error('Seu plano não permite acessar esta página')
       return next('/planos')
     }
+  }
+
+  if (to.meta.requiresAdmin && !auth.admin) {
+    toast.error('Área reservada a administradores')
+    return next('/')
   }
 
   next()

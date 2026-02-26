@@ -106,7 +106,6 @@ onMounted(async () => {
     }
     
     const response = await api.get('/planoPeriodo')
-    console.log('Resposta da API:', response.data)
 
   const mapa: Record<string, PlanoAgrupado> = {}
 
@@ -172,11 +171,6 @@ async function carregarDadosUsuario() {
       nivelUsuario.value = ''
       planoAtualNome.value = ''
     }
-    console.log('Dados do usuário carregados:', {
-      nivel: nivelUsuario.value,
-      plano: planoAtualNome.value,
-      status: planoAtualStatus.value
-    })
   } catch (error) {
     console.error('Erro ao carregar dados do usuário:', error)
   }
@@ -256,7 +250,7 @@ function handleDowngrade(planoNome: string) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 360px));
   gap: 32px;
-  justify-content: center; 
+  justify-content: center;
 }
 
 .planos-footer {
@@ -281,7 +275,7 @@ function handleDowngrade(planoNome: string) {
 
 @media (max-width: 1024px) {
   .planos-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
 
@@ -291,6 +285,11 @@ function handleDowngrade(planoNome: string) {
 }
 
 @media (max-width: 768px) {
+  .planos-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
   .planos-page {
     padding: 32px 12px;
   }
