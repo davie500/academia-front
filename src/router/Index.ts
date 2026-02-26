@@ -12,6 +12,7 @@ import Anotacoes from '../views/Anotacoes.vue'
 import Perfil from '../views/Perfil.vue'
 import NotFound from '../views/NotFound.vue'
 import exercicios from '@/views/exercicios.vue'
+import Admin from '../views/PainelAdmin.vue'
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -24,7 +25,8 @@ const routes = [
   { path: '/perfil', name: 'Perfil', component: Perfil, meta: { requiresAuth: true } },
   { path: '/exercicios', name: 'Exercicios', component: exercicios, meta: { requiresAuth: true, requiredLevel: 1 } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound, meta: { hideNavbar: true } },
-  {}
+  { path: '/admin', name: 'Admin', component: Admin }
+
 ]
 
 const router = createRouter({

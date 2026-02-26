@@ -75,9 +75,11 @@ const userLevel = computed(() => Number(auth.nivel || 0))
 const navItems = [
   { path: '/', label: 'Home' },
   { path: '/planos', label: 'Planos' },
+  { path: '/exercicios', label: 'Exercícios', requiredLevel: 1, requiresAuth: true },
   { path: '/treinos', label: 'Treinos', requiredLevel: 1, requiresAuth: true },
   { path: '/notas', label: 'Anotações', requiredLevel: 1, requiresAuth: true },
-  { path: '/perfil', label: 'Perfil', requiresAuth: true }
+  { path: '/perfil', label: 'Perfil', requiresAuth: true },
+  { path: '/admin', label: 'Admin',  },
 ]
 
 function logout() {
@@ -538,6 +540,18 @@ onUnmounted(() => {
 
 .side-panel.open .side-nav .side-link:nth-child(5) {
   transition-delay: 0.30s;
+  opacity: 1;
+  transform: translateX(0)
+}
+
+.side-panel.open .side-nav .side-link:nth-child(6) {
+  transition-delay: 0.35s;
+  opacity: 1;
+  transform: translateX(0)
+}
+
+.side-panel.open .side-nav .side-link:nth-child(7) {
+  transition-delay: 0.40s;
   opacity: 1;
   transform: translateX(0)
 }

@@ -1,5 +1,6 @@
 <template>
   <div class="page">
+    <LoadingOverlay :show="loading" message="Carregando exercícios..." />
     <div class="overlay"></div>
 
     <div class="content">
@@ -48,11 +49,17 @@
               </svg>
               <strong>Maior carga:</strong>
               <span class="max">{{ exercise.max }}</span>
+              <button class="badge__edit-btn" @click.prevent="openEditCargaModal(exercise)" title="Editar carga máxima">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
             </span>
           </div>
 
           <div class="card-actions">
-            <button class="btn-primary" @click.prevent="openModal(exercise)">Ver mais</button>
+            <button v-if="canViewDetails" class="btn-primary" @click.prevent="openModal(exercise)">Ver mais</button>
           </div>
         </article>
       </section>
@@ -80,19 +87,62 @@
       <!-- modal de detalhes -->
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
         <div class="modal">
-          <div class="modal__content" style="text-align:left; align-items:flex-start;">
+          <div class="modal__header">
             <h2 class="modal__title">{{ selectedExercise?.name }}</h2>
-            <p class="modal__message"><strong>Grupo:</strong> {{ selectedExercise?.group }}</p>
-            <p class="modal__message"><strong>Membro do grupo:</strong> {{ selectedExercise?.raw?.membro_grupo || '—' }}</p>
-            <p class="modal__message" style="margin-top:10px">{{ selectedExercise?.description || 'Sem descrição' }}</p>
+            <button class="modal__close" @click="closeModal" aria-label="Fechar modal">✕</button>
+          </div>
+          
+          <div class="modal__content">
+            <div class="modal__info">
+              <p class="modal__message"><strong>Grupo:</strong> {{ selectedExercise?.group }}</p>
+              <p class="modal__message"><strong>Membro do grupo:</strong> {{ selectedExercise?.raw?.membro_grupo || '—' }}</p>
+              <p class="modal__message modal__description">{{ selectedExercise?.description || 'Sem descrição' }}</p>
+            </div>
 
-            <div v-if="selectedExercise?.media_url" style="margin-top:14px; width:100%; display:flex; justify-content:center;">
-              <img :src="mediaSrc(selectedExercise.media_url)" alt="execução" style="max-width:100%; border-radius:12px;" />
+            <div v-if="selectedExercise?.media_url" class="modal__media-wrapper">
+              <!-- se houver mídia, renderiza a imagem com alt vazio para não exibir texto algum -->
+              <img :src="mediaSrc(selectedExercise.media_url)" alt="" class="modal__image" />
             </div>
           </div>
 
-          <div class="modal__footer" style="margin-top:12px;">
+          <div class="modal__footer">
             <button class="botao botao--secundario" @click="closeModal">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- modal de editar carga máxima -->
+      <div v-if="showEditCargaModal" class="modal-overlay" @click.self="closeEditCargaModal">
+        <div class="modal modal--small">
+          <div class="modal__header">
+            <h2 class="modal__title">Atualizar Carga Máxima</h2>
+            <button class="modal__close" @click="closeEditCargaModal" aria-label="Fechar modal">✕</button>
+          </div>
+          
+          <div class="modal__content">
+            <div class="edit-carga__group">
+              <label class="edit-carga__label">Exercício: <span class="edit-carga__value">{{ exerciseToEdit?.name }}</span></label>
+            </div>
+            
+            <div class="edit-carga__group">
+              <label for="new-carga" class="edit-carga__label">Nova Carga (kg):</label>
+              <input 
+                v-model.number="newCargaValue" 
+                id="new-carga"
+                type="number" 
+                placeholder="Ex: 20" 
+                class="edit-carga__input"
+                min="0"
+                step="0.5"
+              />
+            </div>
+          </div>
+
+          <div class="modal__footer">
+            <button class="botao botao--secundario" @click="closeEditCargaModal">Cancelar</button>
+            <button class="botao botao--primary" @click="updateCargaMaxima" :disabled="updatingCarga">
+              {{ updatingCarga ? 'Atualizando...' : 'Atualizar' }}
+            </button>
           </div>
         </div>
       </div>
@@ -102,9 +152,15 @@
 
 <script>
 import api from "@/controller/api"
+import LoadingOverlay from "@/components/LoadingOverlay.vue"
+import { useToast } from 'vue-toastification'
+import { useAuth } from '@/stores/auth'
 
 export default {
   name: "SavedExercises",
+  components: {
+    LoadingOverlay
+  },
 
   data() {
     return {
@@ -112,19 +168,28 @@ export default {
       exercises: [],
       loading: false,
       error: null,
-      // paginação
       currentPage: 1,
-      perPage: 24
-      ,
-      // modal
+      perPage: 12,
       showModal: false,
-      selectedExercise: null
+      selectedExercise: null,
+      toast: null,
+      showEditCargaModal: false,
+      exerciseToEdit: null,
+      newCargaValue: null,
+      updatingCarga: false
     }
   },
 
   async mounted() {
     this.loading = true
     this.error = null
+
+    // inicializa toast para notificações
+    try {
+      this.toast = useToast()
+    } catch (err) {
+      console.warn('falha ao inicializar toast', err)
+    }
 
     try {
       const res = await api.get("exercicios")
@@ -177,8 +242,45 @@ export default {
     closeModal() {
       this.showModal = false
       this.selectedExercise = null
-    }
-    ,
+    },
+    openEditCargaModal(ex) {
+      this.exerciseToEdit = ex
+      this.newCargaValue = null
+      this.showEditCargaModal = true
+    },
+    closeEditCargaModal() {
+      this.showEditCargaModal = false
+      this.exerciseToEdit = null
+      this.newCargaValue = null
+      this.updatingCarga = false
+    },
+    async updateCargaMaxima() {
+      if (!this.newCargaValue || this.newCargaValue < 0 || !this.exerciseToEdit?.id) {
+        this.toast?.error('Por favor, insira um valor válido de carga')
+        return
+      }
+
+      this.updatingCarga = true
+      try {
+        await api.post(`exercicio/carga-maxima`, {
+          carga_maxima: this.newCargaValue,
+          exercicio_id: this.exerciseToEdit.id
+        })
+
+        const exerciseIndex = this.exercises.findIndex(e => e.id === this.exerciseToEdit.id)
+        if (exerciseIndex !== -1) {
+          this.exercises[exerciseIndex].max = `${this.newCargaValue}kg`
+        }
+
+        this.closeEditCargaModal()
+        this.toast?.success('Carga máxima atualizada com sucesso!')
+      } catch (err) {
+        console.error('Erro ao atualizar carga:', err)
+        this.toast?.error(err?.response?.data?.message || 'Erro ao atualizar carga máxima')
+      } finally {
+        this.updatingCarga = false
+      }
+    },
     mediaSrc(path) {
       if (!path) return null
       // se já for URL absoluta, retorna direto
@@ -198,6 +300,14 @@ export default {
   },
 
   computed: {
+    userNivel() {
+      const auth = useAuth()
+      return auth.nivel || 0
+    },
+
+    canViewDetails() {
+      return this.userNivel >= 2
+    },
     filteredExercises() {
       const q = this.search.trim().toLowerCase()
       if (!q) return this.exercises
@@ -239,15 +349,16 @@ export default {
 .page {
   position: relative;
   min-height: 100vh;
-  background: url("https://images.unsplash.com/photo-1599058917765-a780eda07a3e") center/cover no-repeat;
-  color: #e6eef8;
+  background: url("/assets/fundo.png") center/cover no-repeat;
+  background-color: #0f1419;
+  color: #cbd5e1;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(3,6,20,0.6), rgba(3,6,20,0.75));
-  backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, rgba(15,20,25,0.7), rgba(0,0,0,0.8));
+  backdrop-filter: blur(4px);
 }
 
 .content {
@@ -269,11 +380,15 @@ h1 {
   font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.4px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff7f00, #ff0000);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
   margin-top: 8px;
-  color: #9aa4c7;
+  color: #94a3b8;
   font-size: 14px;
 }
 
@@ -284,26 +399,30 @@ h1 {
 .search-input {
   display: inline-flex;
   align-items: center;
-  background: rgba(12,18,32,0.6);
-  border-radius: 14px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(26,31,46,0.8);
+  border-radius: 12px;
+  padding: 10px 14px;
+  border: 1px solid #4b5563;
   transition: box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .search-input:focus-within {
-  box-shadow: 0 6px 22px rgba(20, 80, 160, 0.14);
-  border-color: rgba(100,160,255,0.16);
+  box-shadow: 0 6px 22px rgba(255, 127, 0, 0.12);
+  border-color: #ff7f00;
 }
 
 .search-input input {
   background: transparent;
   border: none;
-  color: #dce9ff;
-  padding: 10px 10px 10px 8px;
+  color: #cbd5e1;
+  padding: 8px 10px;
   width: 340px;
   outline: none;
   font-size: 14px;
+}
+
+.search-input input::placeholder {
+  color: #94a3b8;
 }
 
 .search-icon {
@@ -317,27 +436,20 @@ h1 {
   display: grid;
   gap: 22px;
   margin-top: 32px;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, 1fr);
 }
 
-@media (min-width: 640px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (min-width: 992px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (min-width: 1280px) {
-  .grid { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
 }
 
 .card {
-  background: linear-gradient(180deg, #051227);
-  border-radius: 20px;
+  background: linear-gradient(135deg, #1a1f2e 0%, #262d3a 100%);
+  border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 6px 18px rgba(3,8,20,0.6), 0 1px 0 rgba(255,255,255,0.02) inset;
-  transition: transform 0.28s cubic-bezier(.2,.9,.3,1), box-shadow 0.28s, background 0.28s;
+  border: 1px solid #4b5563;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: transform 0.28s cubic-bezier(.2,.9,.3,1), box-shadow 0.28s, border-color 0.28s;
   opacity: 0;
   transform: translateY(8px);
   animation: fadeUp 420ms ease forwards;
@@ -348,9 +460,9 @@ h1 {
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 18px 40px #051227 inset;
-  background: linear-gradient(180deg, #051227);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 48px rgba(255, 127, 0, 0.15);
+  border-color: #ff7f00;
 }
 
 .card-top { margin-bottom: 12px; }
@@ -358,13 +470,13 @@ h1 {
 .exercise-name {
   font-size: 18px;
   font-weight: 800;
-  color: #f3f8ff;
+  color: #ffffff;
   margin-bottom: 6px;
 }
 
 .group {
   font-size: 13px;
-  color: #93a7d7;
+  color: #94a3b8;
 }
 
 .card-mid { margin: 12px 0; }
@@ -373,18 +485,46 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(255,176,32,0.08);
-  border: 1px solid rgba(255,176,32,0.16);
-  color: #ffd39a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 127, 0, 0.1);
+  border: 1px solid rgba(255, 127, 0, 0.3);
+  color: #ffb366;
   font-size: 13px;
+  font-weight: 600;
+  position: relative;
 }
 
-.badge .trophy { width: 18px; height: 18px; }
+.badge .trophy { width: 18px; height: 18px; color: #ff7f00; }
 
-.badge strong { font-weight: 700; color: #ffd39a; margin-right: 6px; }
-.badge .max { color: #fff; margin-left: 4px; font-weight: 700; }
+.badge strong { font-weight: 700; color: #ff7f00; margin-right: 4px; }
+.badge .max { color: #ffffff; margin-left: 4px; font-weight: 700; }
+
+.badge__edit-btn {
+  background: transparent;
+  border: none;
+  color: #ffb366;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.18s ease, transform 0.18s ease;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.badge__edit-btn:hover {
+  color: #ff7f00;
+  transform: scale(1.1);
+}
+
+.badge__edit-btn svg {
+  width: 16px;
+  height: 16px;
+}
 
 .card-actions { margin-top: 10px; }
 
@@ -392,16 +532,15 @@ h1 {
   width: 100%;
   padding: 12px 14px;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   color: white;
   font-weight: 700;
-  background: linear-gradient(90deg, #ff6a52 0%, #ff3b7a 100%);
-  box-shadow: 0 8px 20px rgba(255,80,110,0.12);
+  background: linear-gradient(135deg, #ff7f00 0%, #ff0000 100%);
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
-.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(255,72,120,0.14); }
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(255, 0, 0, 0.4); }
 
 @keyframes fadeUp {
   to { opacity: 1; transform: translateY(0); }
@@ -417,14 +556,14 @@ h1 {
 .loading,
 .error {
   margin-top: 28px;
-  color: #cfe4ff;
-  background: rgba(8,12,22,0.45);
+  color: #cbd5e1;
+  background: rgba(26,31,46,0.6);
   padding: 14px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.02);
+  border: 1px solid #4b5563;
 }
 
-.error { color: #ffd2d2; border-color: rgba(255,60,60,0.12); }
+.error { color: #ff9999; border-color: rgba(255,0,0,0.2); }
 
 .pagination-wrap {
   display: flex;
@@ -434,29 +573,29 @@ h1 {
   margin-top: 18px;
 }
 
-.pagination-info { color: #9fb3d9; font-size: 13px; }
+.pagination-info { color: #94a3b8; font-size: 13px; }
 
 .pagination { display: flex; gap: 8px; align-items: center; }
 
 .page-btn {
   min-width: 38px;
   height: 38px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.03);
-  color: #d8e9ff;
-  border: 1px solid rgba(255,255,255,0.02);
+  border-radius: 8px;
+  background: #1a1f2e;
+  color: #cbd5e1;
+  border: 1px solid #4b5563;
   cursor: pointer;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0 10px;
-  transition: transform 0.14s ease, background 0.14s ease;
+  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
 }
 
-.page-btn:hover { transform: translateY(-3px); background: rgba(255,255,255,0.04); }
+.page-btn:hover { transform: translateY(-2px); background: #262d3a; border-color: #ff7f00; }
 .page-btn:disabled { opacity: 0.45; cursor: default; transform: none; }
-.page-btn.active { background: linear-gradient(90deg,#3c6ef7,#6a9bff); box-shadow: 0 8px 20px rgba(60,110,247,0.12); color: white; }
+.page-btn.active { background: linear-gradient(135deg, #ff7f00, #ff0000); box-shadow: 0 8px 20px rgba(255, 127, 0, 0.3); color: white; border-color: transparent; }
 
 /* Modal styles (copiado de PricingCard.vue para consistência) */
 .modal-overlay {
@@ -468,6 +607,7 @@ h1 {
   background: rgba(0, 0, 0, 0.8);
   z-index: 10001;
   padding: 16px;
+  overflow-y: auto;
   animation: fadeIn 0.18s ease-in-out;
 }
 
@@ -477,18 +617,29 @@ h1 {
 }
 
 .modal {
-  background: rgba(6,10,20,0.96);
+  background: rgba(26,31,46,0.96);
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.04);
-  max-width: 640px;
+  border: 1px solid #4b5563;
+  max-width: 95vw;
+  max-height: 90vh;
   width: 100%;
-  padding: 22px 18px;
+  padding: 0;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
   animation: slideUp 0.26s ease-out;
+  overflow: hidden;
+}
+
+.modal--small {
+  max-width: 480px;
+  max-height: auto;
+}
+
+@media (min-width: 640px) {
+  .modal {
+    max-width: 640px;
+  }
 }
 
 @keyframes slideUp {
@@ -497,11 +648,201 @@ h1 {
 }
 
 .modal__content { margin-bottom: 12px; width:100%; }
-.modal__title { font-size: 20px; color: #f3f8ff; margin: 0 0 8px 0; font-weight: 800; }
-.modal__message { font-size: 14px; color: #cfe4ff; margin: 4px 0; line-height: 1.5; }
+.modal__title { font-size: 20px; color: #ffffff; margin: 0 0 8px 0; font-weight: 800; }
+.modal__message { font-size: 14px; color: #cbd5e1; margin: 4px 0; line-height: 1.5; }
 .modal__footer { display: flex; gap: 12px; width: 100%; align-items: center; justify-content: center; margin-top: 8px; }
 
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 18px;
+  border-bottom: 1px solid #4b5563;
+  flex-shrink: 0;
+}
+
+.modal__title {
+  font-size: 20px;
+  color: #ffffff;
+  margin: 0;
+  font-weight: 800;
+  flex: 1;
+  text-align: left;
+}
+
+.modal__close {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.18s ease;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.modal__close:hover {
+  color: #ff7f00;
+}
+
+.modal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal__message {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.modal__description {
+  margin-top: 8px;
+  color: #94a3b8;
+  padding-top: 8px;
+  border-top: 1px solid #4b5563;
+}
+
+.modal__media-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 80px;
+  max-height: 250px;
+  flex-shrink: 0;
+}
+
+.modal__image {
+  max-width: 90%;
+  max-height: 250px;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .modal__media-wrapper {
+    max-height: 200px;
+  }
+  
+  .modal__image {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 520px) {
+  .modal__media-wrapper {
+    max-height: 160px;
+  }
+  
+  .modal__image {
+    max-height: 160px;
+    max-width: 85%;
+  }
+}
+
+.modal__footer {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 18px;
+  border-top: 1px solid #4b5563;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.2);
+}
+
 .botao { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.18s; display:inline-flex; align-items:center; justify-content:center; }
-.botao--secundario { background: transparent; color: #cfe4ff; border: 1px solid rgba(255,255,255,0.04); }
-.botao--secundario:hover { background: rgba(255,255,255,0.02); color: #fff; }
+.botao--secundario { background: transparent; color: #cbd5e1; border: 1px solid #4b5563; }
+.botao--secundario:hover { background: rgba(255,127,0,0.1); color: #ffffff; border-color: #ff7f00; }
+.botao--primary { background: linear-gradient(135deg, #ff7f00, #ff0000); color: #ffffff; border: none; }
+.botao--primary:hover:not(:disabled) { box-shadow: 0 8px 20px rgba(255, 127, 0, 0.3); transform: translateY(-2px); }
+.botao--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.edit-carga__group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-carga__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.edit-carga__value {
+  color: #ff7f00;
+  font-weight: 700;
+}
+
+.edit-carga__input {
+  padding: 10px 12px;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  font-size: 14px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.edit-carga__input:focus {
+  outline: none;
+  border-color: #ff7f00;
+  box-shadow: 0 0 8px rgba(255, 127, 0, 0.2);
+}
+
+.edit-carga__input::placeholder {
+  color: #94a3b8;
+}
+
+.modal__media {
+  margin-top: 14px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal__image {
+  max-width: 90%;
+  max-height: 250px;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .modal__image {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 520px) {
+  .modal__image {
+    max-height: 160px;
+    max-width: 85%;
+  }
+}
 </style>
