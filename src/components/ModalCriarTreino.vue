@@ -48,11 +48,11 @@
               class="opcao-card"
               :class="{ 
                 'opcao-card--active': tipoSelecionado === 'personalizado',
-                'opcao-card--bloqueado': nivelUsuario < 2
+                'opcao-card--bloqueado': !isAdmin && usuarioCarregado && nivelUsuarioNumero < 2
               }"
-              @click="nivelUsuario >= 2 ? selecionarTipo('personalizado') : irParaPlanos()"
+              @click="(isAdmin || (usuarioCarregado && nivelUsuarioNumero >= 2)) ? selecionarTipo('personalizado') : irParaPlanos()"
             >
-              <div v-if="nivelUsuario < 2" class="opcao-card__overlay">
+              <div v-if="!isAdmin && usuarioCarregado && nivelUsuarioNumero < 2" class="opcao-card__overlay">
                 <div class="opcao-card__lock">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 1L9 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-4l-3-3zm0 5a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
@@ -297,10 +297,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import { useAuth } from '@/stores/auth'
 import api from '../controller/api'
 
 const toast = useToast()
 const router = useRouter()
+const auth = useAuth()
+const isAdmin = computed(() => auth.admin)
+const nivelUsuarioNumero = computed(() => Number(auth.nivel || 0))
 
 interface ExercicioBanco {
   id: number
@@ -360,22 +364,30 @@ interface NovoExercicio {
   repeticoes: number
 }
 
+const props = defineProps<{
+  treinosPremontados?: TreinoPremontado[]
+  exerciciosDisponiveis?: ExercicioBanco[]
+  carregandoTreinos?: boolean
+  carregandoExercicios?: boolean
+}>()
+
 const emit = defineEmits<{
   fechar: []
   'treino-criado': [treino: any]
 }>()
 
 const tipoSelecionado = ref<'pre-montado' | 'personalizado' | null>(null)
-const treinosPremontados = ref<TreinoPremontado[]>([])
+const treinosPremontados = computed(() => props.treinosPremontados ?? [])
 const treinoSelecionado = ref<TreinoPremontado | null>(null)
 const carregandoDetalhes = ref(false)
-const carregandoTreinos = ref(true)
-const carregandoExercicios = ref(true)
+const carregandoTreinos = computed(() => props.carregandoTreinos ?? true)
+const carregandoExercicios = computed(() => props.carregandoExercicios ?? true)
 const isSalvando = ref(false)
-const usuarioId = ref<number | null>(null)
-const nivelUsuario = ref<number>(0)
+const usuarioId = ref<number | null>(auth.user?.id ?? null)
+const usuarioCarregado = ref<boolean>(!!auth.user)
+const nivelUsuario = ref<number>(auth.nivel || 0)
 const pesquisaTreino = ref('')
-const exerciciosDisponiveis = ref<ExercicioBanco[]>([])
+const exerciciosDisponiveis = computed(() => props.exerciciosDisponiveis ?? [])
 const grupoMuscularSelecionado = ref<string>('todos')
 const pesquisaExercicio = ref('')
 const mostraDropdownExercicio = ref(false)
@@ -434,48 +446,33 @@ const exerciciosFiltrados = computed(() => {
 })
 
 const carregandoInicial = computed(() => {
-  return carregandoTreinos.value || carregandoExercicios.value
+  return carregandoTreinos.value || carregandoExercicios.value || !usuarioCarregado.value
 })
 
 onMounted(async () => {
+  if (auth.user && auth.nivel) {
+    usuarioCarregado.value = true
+    usuarioId.value = auth.user.id
+    nivelUsuario.value = auth.nivel
+    return
+  }
   await carregarUsuarioId()
-  await carregarTreinosPremontados()
-  await carregarExercicios()
-  console.log(nivelUsuario.value)
 })
 
 async function carregarUsuarioId() {
   try {
     const response = await api.get('/auth/me')
     usuarioId.value = response.data.id
-    nivelUsuario.value = response.data.assinatura.plano.nivel.nome || 1
-    console.log(response.data)
+    nivelUsuario.value = Number(
+      response.data.assinatura.plano.nivel.id ?? response.data.assinatura.plano.nivel.nome
+    ) || 1
+    usuarioCarregado.value = true
+    auth.nivel = nivelUsuario.value
+    if (response.data.admin !== undefined) {
+      auth.admin = response.data.admin === true || response.data.admin === 1
+    }
   } catch (error) {
     console.error('Erro ao carregar ID do usuário:', error)
-  }
-}
-
-async function carregarTreinosPremontados() {
-  carregandoTreinos.value = true
-  try {
-    const response = await api.get('/treinos?publicos=true')
-    treinosPremontados.value = response.data
-  } catch (error) {
-    console.error('Erro ao carregar treinos pré-montados:', error)
-  } finally {
-    carregandoTreinos.value = false
-  }
-}
-
-async function carregarExercicios() {
-  carregandoExercicios.value = true
-  try {
-    const response = await api.get('/exercicios')
-    exerciciosDisponiveis.value = response.data
-  } catch (error) {
-    console.error('Erro ao carregar exercícios:', error)
-  } finally {
-    carregandoExercicios.value = false
   }
 }
 

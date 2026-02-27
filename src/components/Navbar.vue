@@ -75,9 +75,12 @@ const userLevel = computed(() => Number(auth.nivel || 0))
 const navItems = [
   { path: '/', label: 'Home' },
   { path: '/planos', label: 'Planos' },
+  { path: '/exercicios', label: 'Exercícios', requiredLevel: 1, requiresAuth: true },
   { path: '/treinos', label: 'Treinos', requiredLevel: 1, requiresAuth: true },
   { path: '/notas', label: 'Anotações', requiredLevel: 1, requiresAuth: true },
-  { path: '/perfil', label: 'Perfil', requiresAuth: true }
+  { path: '/historico', label: 'Pagamentos', requiresAuth: true },
+  { path: '/perfil', label: 'Perfil', requiresAuth: true },
+  { path: '/admin', label: 'Admin', requiresAdmin: true },
 ]
 
 function logout() {
@@ -86,6 +89,9 @@ function logout() {
 }
 
 function isLocked(item) {
+
+  if (auth.admin) return false
+
   if (typeof item.requiredLevel === 'number') {
     return userLevel.value < item.requiredLevel
   }
@@ -94,6 +100,7 @@ function isLocked(item) {
 
 function showItem(item) {
   if (item.requiresAuth && !isAuthenticated.value) return false
+  if (item.requiresAdmin && !auth.admin) return false
   return true
 }
 
@@ -136,15 +143,8 @@ onUnmounted(() => {
 .navbar {
   background-image: linear-gradient(90deg, #e53935 0%, #ff7a18 100%);
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 72px;
+  height: var(--navbar-height);
   padding: 0 20px;
-  flex-wrap: nowrap;
-  gap: 0;
-  position: relative;
-  --navbar-height: 72px;
   z-index: 4000;
 }
 
@@ -154,15 +154,11 @@ onUnmounted(() => {
 
 .brand-title {
   margin: 0;
-  font-size: 1.15rem;
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 800;
   color: #fff;
 }
 
@@ -398,34 +394,16 @@ onUnmounted(() => {
   border-radius: 8px
 }
 
-@media (max-width: 520px) {
+@media (max-width: 375px) {
   .side-toggle {
     left: 10px;
     top: 10px;
     width: 34px;
-    height: 34px
-  }
-
-  .side-panel {
-    width: 280px
-  }
-
-  .side-brand {
-    font-size: 1.6rem
-  }
-
-  .side-link {
-    font-size: 1.05rem
+    height: 34px;
   }
 }
 
-.login-wrap {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1450;
-}
+
 
 .auth-btn {
   display: inline-flex;
@@ -542,20 +520,37 @@ onUnmounted(() => {
   transform: translateX(0)
 }
 
-@media (max-width: 520px) {
+.side-panel.open .side-nav .side-link:nth-child(6) {
+  transition-delay: 0.35s;
+  opacity: 1;
+  transform: translateX(0)
+}
+
+.side-panel.open .side-nav .side-link:nth-child(7) {
+  transition-delay: 0.40s;
+  opacity: 1;
+  transform: translateX(0)
+}
+
+.side-panel.open .side-nav .side-link:nth-child(8) {
+  transition-delay: 0.40s;
+  opacity: 1;
+  transform: translateX(0)
+}
+
+@media (max-width: 375px) {
   .side-toggle {
     left: 12px;
     width: 44px;
     height: 44px;
-    top: 35px;
   }
 
   .side-panel {
-    width: 260px
+    width: 260px;
   }
 
-  .side-home {
-    font-size: 1.6rem
+  .side-brand {
+    font-size: 1.6rem;
   }
 }
 </style>
