@@ -475,8 +475,6 @@ function formatDate(date) {
   transition: all 160ms ease;
 }
 
-
-/* retain a sensible page container; outer layout handled globally */
 .page {
   min-height: 100vh;
   background: linear-gradient(180deg, var(--color-bg-dark) 0%, var(--color-bg) 100%);
@@ -485,9 +483,6 @@ function formatDate(date) {
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
 }
 
-/* the .container class is defined globally and imported from responsive.css;
-   this view no longer overrides its max-width so every screen shares the same
-   fluid behaviour */
 
 .empty-state {
   display: flex;
@@ -612,8 +607,6 @@ function formatDate(date) {
 
 .notes-grid {
   display: grid;
-  /* column count is controlled by global responsive rules; gap remains local
-     because spacing variables may vary per section */
   gap: 18px;
 }
 
@@ -829,9 +822,6 @@ function formatDate(date) {
 .toast-leave-active {
   transition: all 160ms ease;
 }
-
-/* responsive adjustments moved to global stylesheet (see responsive.css)
-   so they can be reused by any page */
 
 .pagination {
   display: flex;

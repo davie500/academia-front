@@ -78,6 +78,15 @@
     @fechar="fecharModalDetalhes"
     @treino-atualizado="atualizarTreino"
     @treino-excluido="excluirTreino"
+    @editar-treino="abrirModalEditar"
+  />
+
+  <ModalEditarTreino
+    v-if="mostrarModalEditar && treinoEmEdicao"
+    :treino="treinoEmEdicao"
+    :exercicios-disponiveis="exerciciosDisponiveis"
+    @fechar="fecharModalEditar"
+    @treino-atualizado="atualizarTreino"
   />
 </template>
 
@@ -86,7 +95,9 @@ import { onMounted, ref, computed } from 'vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import ModalCriarTreino from '../components/ModalCriarTreino.vue'
 import ModalDetalheTreino from '../components/ModalDetalheTreino.vue'
+import ModalEditarTreino from '../components/ModalEditarTreino.vue'
 import api from '../controller/api'
+import { useAuth } from '../stores/auth'
 
 interface Exercicio {
   id?: number
@@ -104,22 +115,21 @@ interface Treino {
   usuarioId?: number | null
 }
 
+const auth = useAuth()
 const treinos = ref<Treino[]>([])
 const loading = ref(false)
 const mostrarModalCriar = ref(false)
 const mostrarModalDetalhes = ref(false)
+const mostrarModalEditar = ref(false)
 const treinoSelecionado = ref<Treino | null>(null)
-const usuarioId = ref<number | null>(null)
+const treinoEmEdicao = ref<Treino | null>(null)
 const treinosPremontados = ref<any[]>([])
 const exerciciosDisponiveis = ref<any[]>([])
 const carregandoTreinos = ref(true)
 const carregandoExercicios = ref(true)
 
 const treinosUsuario = computed(() => {
-  return treinos.value.filter(treino => {
-    const id = treino.usuario_id ?? treino.usuarioId
-    return id !== null && id !== undefined
-  })
+  return treinos.value
 })
 
 onMounted(async () => {
@@ -155,7 +165,12 @@ async function carregarExercicios() {
 async function carregarTreinos() {
   loading.value = true
   try {
-    const response = await api.get('/treinos')
+    const usuarioId = auth.user?.id
+    if (!usuarioId) {
+      console.error('Usuário não autenticado')
+      return
+    }
+    const response = await api.get(`/treinos/usuario/${usuarioId}`)
     treinos.value = response.data
   } catch (error) {
     console.error('Erro ao carregar treinos:', error)
@@ -182,17 +197,29 @@ function fecharModalDetalhes() {
   treinoSelecionado.value = null
 }
 
-function adicionarTreino(novoTreino: Treino) {
+function abrirModalEditar(treino: Treino) {
+  treinoEmEdicao.value = treino
+  mostrarModalEditar.value = true
+  fecharModalDetalhes()
+}
+
+function fecharModalEditar() {
+  mostrarModalEditar.value = false
+  treinoEmEdicao.value = null
+}
+
+async function adicionarTreino(novoTreino: Treino) {
   treinos.value.push(novoTreino)
   fecharModalCriar()
 }
 
-function atualizarTreino(treinoAtualizado: Treino) {
+async function atualizarTreino(treinoAtualizado: Treino) {
   const index = treinos.value.findIndex(t => t.id === treinoAtualizado.id)
   if (index !== -1) {
     treinos.value[index] = treinoAtualizado
   }
   fecharModalDetalhes()
+  fecharModalEditar()
 }
 
 async function excluirTreino(id: number) {

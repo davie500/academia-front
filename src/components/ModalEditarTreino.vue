@@ -3,17 +3,8 @@
     <div class="modal">
       <div class="modal__header">
         <div class="modal__header-content">
-          <div class="modal__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="8" width="3" height="8" rx="0.8" />
-              <rect x="20" y="8" width="3" height="8" rx="0.8" />
-              <rect x="7" y="10" width="10" height="4" rx="0.8" />
-            </svg>
-          </div>
-          <div class="modal__header-texto">
-            <h2 class="modal__title">{{ treino.nome }}</h2>
-            <p class="modal__info">{{ treino.tipo }} • {{ treino.exercicios.length }} exercícios</p>
-          </div>
+          <h2 class="modal__title">Editar {{ treino.nome }}</h2>
+          <p class="modal__info">Adicionar exercícios ao treino</p>
         </div>
         <button class="modal__close" @click="fechar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -23,7 +14,33 @@
       </div>
 
       <div class="modal__content">
-        <h3 class="exercicios__titulo">Exercícios</h3>
+        <div class="form-group">
+          <label class="form-label">Selecione um exercício</label>
+          <select v-model="exercicioSelecionado" class="form-select">
+            <option value="">Escolha um exercício</option>
+            <option v-for="exercicio in exerciciosDisponiveis" :key="exercicio.id" :value="exercicio.id">
+              {{ exercicio.nome }}
+            </option>
+          </select>
+        </div>
+
+        <div v-if="exercicioSelecionado" class="form-group">
+          <label class="form-label">Séries</label>
+          <input v-model.number="series" type="number" min="1" class="form-input" placeholder="Número de séries" />
+        </div>
+
+        <div v-if="exercicioSelecionado" class="form-group">
+          <label class="form-label">Repetições</label>
+          <input v-model.number="repeticoes" type="number" min="1" class="form-input" placeholder="Número de repetições" />
+        </div>
+
+        <div v-if="exercicioSelecionado" class="form-group">
+          <button class="botao botao--primario" @click="adicionarExercicio" :disabled="loading || !series || !repeticoes">
+            Adicionar Exercício
+          </button>
+        </div>
+
+        <h3 class="exercicios__titulo" style="margin-top: 32px;">Exercícios no treino</h3>
         <div v-if="treino.exercicios.length === 0" class="vazio">
           Nenhum exercício adicionado
         </div>
@@ -51,44 +68,16 @@
       </div>
 
       <div class="modal__footer">
-        <div class="modal__footer-left">
-          <button class="botao botao--danger" @click="mostrarConfirmacao = true" :disabled="loading">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon-small">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Excluir
-          </button>
-        </div>
-
-        <div class="modal__footer-right">
-          <button class="botao botao--secundario" @click="fechar" :disabled="loading">
-            Fechar
-          </button>
-          <button 
-            v-if="treino.tipo === 'Personalizado'"
-            class="botao botao--primario" 
-            @click="editarTreino" 
-            :disabled="loading"
-          >
-            Editar
-          </button>
-        </div>
+        <button class="botao botao--secundario" @click="fechar" :disabled="loading">
+          Fechar
+        </button>
       </div>
     </div>
   </div>
-
-  <ModalConfirmarExclusao
-    v-if="mostrarConfirmacao"
-    :id="treino.id"
-    :titulo="treino.nome"
-    @fechar="mostrarConfirmacao = false"
-    @confirmado="handleExclusaoConfirmada"
-  />
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ModalConfirmarExclusao from './ModalConfirmarExclusao.vue'
 import api from '../controller/api'
 
 interface PivotData {
@@ -113,31 +102,51 @@ interface Treino {
 
 const props = defineProps<{
   treino: Treino
+  exerciciosDisponiveis: any[]
 }>()
 
 const emit = defineEmits<{
   fechar: []
   'treino-atualizado': [treino: Treino]
-  'treino-excluido': [id: number]
-  'editar-treino': [treino: Treino]
 }>()
 
 const loading = ref(false)
-const mostrarConfirmacao = ref(false)
+const exercicioSelecionado = ref('')
+const series = ref<number | null>(null)
+const repeticoes = ref<number | null>(null)
 
 function fechar() {
   if (!loading.value) emit('fechar')
 }
 
-function editarTreino() {
-  if (loading.value) return
-  emit('editar-treino', props.treino)
-  fechar()
-}
+async function adicionarExercicio() {
+  if (!exercicioSelecionado.value || !series.value || !repeticoes.value) {
+    alert('Preencha todos os campos')
+    return
+  }
 
-function handleExclusaoConfirmada() {
-  emit('treino-excluido', props.treino.id)
-  fechar()
+  loading.value = true
+  try {
+    const response = await api.post(`/treinos/adicionar/${props.treino.id}`, {
+      exercicio_id: parseInt(exercicioSelecionado.value),
+      series: series.value,
+      repeticoes: repeticoes.value
+    })
+
+    // Recarregar os dados do treino
+    const treinoAtualizado = response.data
+    emit('treino-atualizado', treinoAtualizado)
+
+    // Resetar formulário
+    exercicioSelecionado.value = ''
+    series.value = null
+    repeticoes.value = null
+  } catch (error) {
+    console.error('Erro ao adicionar exercício:', error)
+    alert('Erro ao adicionar exercício ao treino')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -176,30 +185,6 @@ function handleExclusaoConfirmada() {
 }
 
 .modal__header-content {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
-
-.modal__icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 107, 53, 0.1);
-  border-radius: 8px;
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
-.modal__icon svg {
-  width: 24px;
-  height: 24px;
-}
-
-.modal__header-texto {
   flex: 1;
 }
 
@@ -243,6 +228,42 @@ function handleExclusaoConfirmada() {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-white);
+  margin-bottom: 8px;
+  font-weight: var(--font-weight-bold);
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-white);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+}
+
+.form-select:focus,
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.form-select option {
+  background: #1a1f2e;
+  color: var(--color-text-white);
 }
 
 .exercicios__titulo {
@@ -313,22 +334,7 @@ function handleExclusaoConfirmada() {
   background: var(--color-bg-darker);
   border-bottom-left-radius: var(--radius-md);
   border-bottom-right-radius: var(--radius-md);
-}
-
-.modal__footer {
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal__footer-left {
-  display: flex;
-  align-items: center;
-}
-
-.modal__footer-right {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+  justify-content: flex-end;
 }
 
 .botao {
@@ -344,11 +350,16 @@ function handleExclusaoConfirmada() {
 .botao--primario {
   background: var(--color-primary);
   color: white;
-  flex: 1;
+  width: 100%;
 }
 
-.botao--primario:hover {
+.botao--primario:hover:not(:disabled) {
   background: var(--color-primary-dark);
+}
+
+.botao--primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .botao--secundario {
@@ -357,26 +368,13 @@ function handleExclusaoConfirmada() {
   border: 1px solid var(--color-border);
 }
 
-.botao--secundario:hover {
+.botao--secundario:hover:not(:disabled) {
   border-color: var(--color-text-primary);
   color: var(--color-text-white);
 }
 
-.botao--danger {
-  background: var(--color-secondary);
-  color: white;
-  border: none;
-}
-
-.botao--danger:disabled {
+.botao--secundario:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.icon-small {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  vertical-align: middle;
 }
 </style>
